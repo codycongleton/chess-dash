@@ -71,8 +71,8 @@ Each bucket has `current`, `best`, `last_played`, and `source` (`"stats"` for th
 4. **Opponent rating over time** — scatter (per-game) + 20-game rolling average lines.
 5. **Outcomes** — stacked bar of granular reasons.
 6. **Win rate by time class** — horizontal stacked bar.
-7. **Weekly rating distribution** — one boxplot chart per time-class, last `BOXPLOT_WEEKS` weeks (default 26). Min / Q1 / median / Q3 / max.
-8. **Weekly performance** — table, rolling 12 weeks Mon-start. Three rows per game type (games, win %, Δ rating).
+7. **Weekly rating distribution** — one boxplot chart per (variant, time-class), last `BOXPLOT_WEEKS` weeks (default 26). Min / Q1 / median / Q3 / max. **Ignores the variant toggle** — both Standard and Chess960 are shown stacked with section headers (`Standard` / `Chess960`). Rendered once at init, not on every variant flip.
+8. **Weekly performance** — table, rolling 12 weeks Mon-start. Three rows per game type (games, win %, Δ rating). **Ignores the variant toggle** — both Standard and Chess960 are stacked with section divider rows. Rendered once at init.
 
 ## Common edits
 

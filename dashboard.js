@@ -50,6 +50,8 @@ async function init() {
 
     setMeta();
     renderCurrentRatings();
+    renderBoxplot();
+    renderWeekly();
     render();
 }
 
@@ -103,8 +105,9 @@ function render() {
     renderOpponent(chartGames);
     renderOutcome(chartGames);
     renderWinrate(chartGames);
-    renderBoxplot(chartGames);
-    renderWeekly(chartGames);
+    // The weekly rating distribution and weekly performance table both
+    // show all variants stacked — they ignore the variant toggle and are
+    // rendered once at init time.
 }
 
 function renderStrikeline(games) {
@@ -193,16 +196,24 @@ function renderStrikeline(games) {
 }
 
 const BOXPLOT_WEEKS = 26;
+const BOXPLOT_VARIANTS = [
+    { rules: "chess",    label: "Standard" },
+    { rules: "chess960", label: "Chess960" },
+];
 
-function renderBoxplot(games) {
-    // Tear down any prior per-time-class charts.
-    for (const tc of TIME_CLASSES) destroyChart(`boxplot-${tc}`);
+function renderBoxplot() {
+    // Tear down any prior per-(variant,time-class) charts.
+    for (const { rules } of BOXPLOT_VARIANTS) {
+        for (const tc of TIME_CLASSES) destroyChart(`boxplot-${rules}-${tc}`);
+    }
 
     const root = document.getElementById("boxplotGrid");
     root.innerHTML = "";
 
-    if (games.length === 0) {
-        root.innerHTML = `<p class="hint">No games for this variant.</p>`;
+    // Show both variants stacked. Bullet excluded (rating axis warps).
+    const data = allGames.filter(g => g.time_class !== "bullet");
+    if (!data.length) {
+        root.innerHTML = `<p class="hint">No games yet.</p>`;
         return;
     }
 
@@ -217,33 +228,40 @@ function renderBoxplot(games) {
         d.toLocaleDateString(undefined, { month: "short", day: "numeric" })
     );
 
-    const presentTCs = TIME_CLASSES.filter(tc => games.some(g => g.time_class === tc));
-    const variantLabel = currentVariant === "chess960" ? "Chess960" : "Standard";
+    for (const { rules, label: variantLabel } of BOXPLOT_VARIANTS) {
+        const variantGames = data.filter(g => g.rules === rules);
+        const presentTCs = TIME_CLASSES.filter(tc => variantGames.some(g => g.time_class === tc));
+        if (!presentTCs.length) continue;
 
-    for (const tc of presentTCs) {
-        const sub = games.filter(g => g.time_class === tc);
+        const header = document.createElement("div");
+        header.className = "boxplot-section-header";
+        header.textContent = variantLabel;
+        root.appendChild(header);
 
-        const perWeek = weeks.map(wStart => {
-            const wEndMs = wStart.getTime() + 7 * 24 * 60 * 60 * 1000;
-            return sub
-                .filter(g => {
-                    const t = g.end_time * 1000;
-                    return t >= wStart.getTime() && t < wEndMs;
-                })
-                .map(g => g.my_rating)
-                .filter(r => typeof r === "number");
-        });
+        for (const tc of presentTCs) {
+            const sub = variantGames.filter(g => g.time_class === tc);
 
-        const cell = document.createElement("div");
-        cell.className = "boxplot-cell";
-        cell.innerHTML = `
-            <h3>${variantLabel} · ${tc}</h3>
-            <div class="chart-wrap"><canvas></canvas></div>
-        `;
-        root.appendChild(cell);
+            const perWeek = weeks.map(wStart => {
+                const wEndMs = wStart.getTime() + 7 * 24 * 60 * 60 * 1000;
+                return sub
+                    .filter(g => {
+                        const t = g.end_time * 1000;
+                        return t >= wStart.getTime() && t < wEndMs;
+                    })
+                    .map(g => g.my_rating)
+                    .filter(r => typeof r === "number");
+            });
 
-        const ctx = cell.querySelector("canvas");
-        charts[`boxplot-${tc}`] = new Chart(ctx, {
+            const cell = document.createElement("div");
+            cell.className = "boxplot-cell";
+            cell.innerHTML = `
+                <h3>${variantLabel} · ${tc}</h3>
+                <div class="chart-wrap"><canvas></canvas></div>
+            `;
+            root.appendChild(cell);
+
+            const ctx = cell.querySelector("canvas");
+            charts[`boxplot-${rules}-${tc}`] = new Chart(ctx, {
             type: "boxplot",
             data: {
                 labels,
@@ -301,6 +319,7 @@ function renderBoxplot(games) {
                 },
             },
         });
+        }
     }
 }
 
@@ -313,10 +332,11 @@ function startOfWeek(d) {
     return out;
 }
 
-function renderWeekly(games) {
+function renderWeekly() {
     const root = document.getElementById("weeklyTable");
-    if (!games.length) {
-        root.innerHTML = `<p class="hint">No games for this variant.</p>`;
+    const data = allGames.filter(g => g.time_class !== "bullet");
+    if (!data.length) {
+        root.innerHTML = `<p class="hint">No games yet.</p>`;
         return;
     }
 
@@ -328,10 +348,6 @@ function renderWeekly(games) {
         weeks.push(d);
     }
 
-    const presentTCs = TIME_CLASSES.filter(tc => games.some(g => g.time_class === tc));
-    const variantLabel = currentVariant === "chess960" ? "Chess960" : "Standard";
-    const ratingsForVariant = ratingsData?.ratings?.[currentVariant] || {};
-
     let html = `<div class="table-scroll"><table class="weekly"><thead><tr>
         <th class="row-label">Game type</th>
         <th class="metric">Metric</th>`;
@@ -341,60 +357,67 @@ function renderWeekly(games) {
     }
     html += `</tr></thead><tbody>`;
 
-    for (const tc of presentTCs) {
-        const sub = games
-            .filter(g => g.time_class === tc)
-            .slice()
-            .sort((a, b) => a.end_time - b.end_time);
+    const cell = (val, cls = "") => `<td class="${cls}">${val}</td>`;
+    const colspan = weeks.length + 2;
+    let firstSection = true;
 
-        const perWeek = weeks.map(wStart => {
-            const wEnd = new Date(wStart);
-            wEnd.setDate(wEnd.getDate() + 7);
-            const inWeek = sub.filter(g => {
-                const t = g.end_time * 1000;
-                return t >= wStart.getTime() && t < wEnd.getTime();
+    for (const { rules, label: variantLabel } of BOXPLOT_VARIANTS) {
+        const variantGames = data.filter(g => g.rules === rules);
+        const presentTCs = TIME_CLASSES.filter(tc => variantGames.some(g => g.time_class === tc));
+        if (!presentTCs.length) continue;
+
+        const ratingsForVariant = ratingsData?.ratings?.[rules] || {};
+        const sectionClass = firstSection ? "section-row first" : "section-row";
+        html += `<tr class="${sectionClass}"><td colspan="${colspan}">${variantLabel}</td></tr>`;
+        firstSection = false;
+
+        for (const tc of presentTCs) {
+            const sub = variantGames
+                .filter(g => g.time_class === tc)
+                .slice()
+                .sort((a, b) => a.end_time - b.end_time);
+
+            const perWeek = weeks.map(wStart => {
+                const wEnd = new Date(wStart);
+                wEnd.setDate(wEnd.getDate() + 7);
+                const inWeek = sub.filter(g => {
+                    const t = g.end_time * 1000;
+                    return t >= wStart.getTime() && t < wEnd.getTime();
+                });
+                if (inWeek.length === 0) return { n: 0, winRate: null, change: null };
+                const wins = inWeek.filter(g => g.outcome === "win").length;
+                const winRate = (wins / inWeek.length) * 100;
+                const startRating = inWeek[0].my_rating;
+                const next = sub.find(g => g.end_time * 1000 >= wEnd.getTime());
+                const endRating = next ? next.my_rating
+                                       : (ratingsForVariant[tc]?.current ?? inWeek[inWeek.length - 1].my_rating);
+                return { n: inWeek.length, winRate, change: endRating - startRating };
             });
-            if (inWeek.length === 0) return { n: 0, winRate: null, change: null };
-            const wins = inWeek.filter(g => g.outcome === "win").length;
-            const winRate = (wins / inWeek.length) * 100;
-            const startRating = inWeek[0].my_rating;
-            // Rating after the last game in the week ≈ my_rating of next game in the
-            // same time-class bucket. If none, use the current rating from stats.
-            const next = sub.find(g => g.end_time * 1000 >= wEnd.getTime());
-            const endRating = next ? next.my_rating
-                                   : (ratingsForVariant[tc]?.current ?? inWeek[inWeek.length - 1].my_rating);
-            return { n: inWeek.length, winRate, change: endRating - startRating };
-        });
 
-        const cell = (val, cls = "") => `<td class="${cls}">${val}</td>`;
-        const label = `${variantLabel} ${tc}`;
+            html += `<tr class="row-first"><td rowspan="3" class="row-label">${tc}</td>`;
+            html += `<td class="metric">Games</td>`;
+            for (const pw of perWeek) {
+                html += pw.n === 0 ? cell("—", "empty") : cell(pw.n);
+            }
+            html += `</tr>`;
 
-        // Games
-        html += `<tr class="row-first"><td rowspan="3" class="row-label">${label}</td>`;
-        html += `<td class="metric">Games</td>`;
-        for (const pw of perWeek) {
-            html += pw.n === 0 ? cell("—", "empty") : cell(pw.n);
+            html += `<tr><td class="metric">Win %</td>`;
+            for (const pw of perWeek) {
+                html += pw.winRate === null
+                    ? cell("—", "empty")
+                    : cell(`${pw.winRate.toFixed(0)}%`);
+            }
+            html += `</tr>`;
+
+            html += `<tr class="row-last"><td class="metric">Δ Rating</td>`;
+            for (const pw of perWeek) {
+                if (pw.change === null) { html += cell("—", "empty"); continue; }
+                const cls = pw.change > 0 ? "pos" : pw.change < 0 ? "neg" : "";
+                const txt = (pw.change > 0 ? "+" : "") + pw.change;
+                html += cell(txt, cls);
+            }
+            html += `</tr>`;
         }
-        html += `</tr>`;
-
-        // Win %
-        html += `<tr><td class="metric">Win %</td>`;
-        for (const pw of perWeek) {
-            html += pw.winRate === null
-                ? cell("—", "empty")
-                : cell(`${pw.winRate.toFixed(0)}%`);
-        }
-        html += `</tr>`;
-
-        // Δ Rating
-        html += `<tr class="row-last"><td class="metric">Δ Rating</td>`;
-        for (const pw of perWeek) {
-            if (pw.change === null) { html += cell("—", "empty"); continue; }
-            const cls = pw.change > 0 ? "pos" : pw.change < 0 ? "neg" : "";
-            const txt = (pw.change > 0 ? "+" : "") + pw.change;
-            html += cell(txt, cls);
-        }
-        html += `</tr>`;
     }
 
     html += `</tbody></table></div>`;

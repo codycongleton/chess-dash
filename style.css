@@ -239,6 +239,22 @@ h1 {
     margin-top: 0.5rem;
 }
 
+.boxplot-section-header {
+    grid-column: 1 / -1;
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-weight: 600;
+    color: var(--muted);
+    padding-top: 0.25rem;
+    border-top: 1px solid var(--border);
+}
+
+.boxplot-section-header:first-child {
+    padding-top: 0;
+    border-top: 0;
+}
+
 .boxplot-cell {
     background: var(--panel-2);
     border: 1px solid var(--border);
@@ -320,6 +336,23 @@ table.weekly {
 
 .weekly td.pos { color: var(--win); }
 .weekly td.neg { color: var(--loss); }
+
+.weekly tr.section-row td {
+    text-align: left;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: var(--muted);
+    padding-top: 0.85rem;
+    padding-bottom: 0.35rem;
+    border-bottom: 1px solid var(--border);
+    background: var(--panel-2);
+}
+
+.weekly tr.section-row.first td {
+    padding-top: 0.25rem;
+}
 
 footer {
     display: flex;
