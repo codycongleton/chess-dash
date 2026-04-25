@@ -179,12 +179,32 @@ h1 {
     height: 320px;
 }
 
-.chart-wrap.chart-tall {
-    height: 420px;
-}
-
 .card.card-wide {
     grid-column: 1 / -1;
+}
+
+.boxplot-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
+    gap: 0.85rem;
+    margin-top: 0.5rem;
+}
+
+.boxplot-cell {
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.6rem 0.85rem 0.85rem;
+}
+
+.boxplot-cell h3 {
+    margin: 0 0 0.35rem;
+    font-size: 0.9rem;
+    font-weight: 600;
+}
+
+.boxplot-cell .chart-wrap {
+    height: 240px;
 }
 
 .weekly-card {

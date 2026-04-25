@@ -94,103 +94,128 @@ function setMeta() {
 
 function render() {
     const games = allGames.filter(g => g.rules === currentVariant);
+    // Bullet is hidden in charts (rating range too far from blitz/rapid/daily
+    // to be useful on shared axes) but kept in the Current ratings cards.
+    const chartGames = games.filter(g => g.time_class !== "bullet");
     renderSummary(games);
-    renderRating(games);
-    renderOpponent(games);
-    renderOutcome(games);
-    renderWinrate(games);
-    renderBoxplot(games);
-    renderWeekly(games);
+    renderRating(chartGames);
+    renderOpponent(chartGames);
+    renderOutcome(chartGames);
+    renderWinrate(chartGames);
+    renderBoxplot(chartGames);
+    renderWeekly(chartGames);
 }
 
+const BOXPLOT_WEEKS = 26;
+
 function renderBoxplot(games) {
-    destroyChart("boxplot");
-    const ctx = document.getElementById("boxplotChart");
+    // Tear down any prior per-time-class charts.
+    for (const tc of TIME_CLASSES) destroyChart(`boxplot-${tc}`);
 
-    // Collect all (year-month) keys present in the filtered set, sorted.
-    const monthsSet = new Set();
-    for (const g of games) {
-        const d = new Date(g.end_time * 1000);
-        monthsSet.add(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`);
-    }
-    const months = [...monthsSet].sort();
+    const root = document.getElementById("boxplotGrid");
+    root.innerHTML = "";
 
-    if (months.length === 0) {
+    if (games.length === 0) {
+        root.innerHTML = `<p class="hint">No games for this variant.</p>`;
         return;
     }
 
-    // For each time class, build an array of per-month rating arrays.
-    const datasets = [];
-    for (const tc of TIME_CLASSES) {
-        const sub = games.filter(g => g.time_class === tc);
-        if (sub.length === 0) continue;
+    const thisMonday = startOfWeek(new Date());
+    const weeks = [];
+    for (let i = BOXPLOT_WEEKS - 1; i >= 0; i--) {
+        const d = new Date(thisMonday);
+        d.setDate(d.getDate() - i * 7);
+        weeks.push(d);
+    }
+    const labels = weeks.map(d =>
+        d.toLocaleDateString(undefined, { month: "short", day: "numeric" })
+    );
 
-        const perMonth = months.map(key => {
-            const [y, mo] = key.split("-").map(Number);
+    const presentTCs = TIME_CLASSES.filter(tc => games.some(g => g.time_class === tc));
+    const variantLabel = currentVariant === "chess960" ? "Chess960" : "Standard";
+
+    for (const tc of presentTCs) {
+        const sub = games.filter(g => g.time_class === tc);
+
+        const perWeek = weeks.map(wStart => {
+            const wEndMs = wStart.getTime() + 7 * 24 * 60 * 60 * 1000;
             return sub
                 .filter(g => {
-                    const d = new Date(g.end_time * 1000);
-                    return d.getFullYear() === y && d.getMonth() + 1 === mo;
+                    const t = g.end_time * 1000;
+                    return t >= wStart.getTime() && t < wEndMs;
                 })
                 .map(g => g.my_rating)
                 .filter(r => typeof r === "number");
         });
 
-        datasets.push({
-            label: tc,
-            data: perMonth,
-            backgroundColor: TIME_CLASS_COLORS[tc] + "55",
-            borderColor: TIME_CLASS_COLORS[tc],
-            borderWidth: 1.5,
-            outlierBackgroundColor: TIME_CLASS_COLORS[tc],
-            itemRadius: 0,
-        });
-    }
+        const cell = document.createElement("div");
+        cell.className = "boxplot-cell";
+        cell.innerHTML = `
+            <h3>${variantLabel} · ${tc}</h3>
+            <div class="chart-wrap"><canvas></canvas></div>
+        `;
+        root.appendChild(cell);
 
-    const labels = months.map(key => {
-        const [y, mo] = key.split("-").map(Number);
-        return new Date(y, mo - 1, 1).toLocaleDateString(undefined, { year: "2-digit", month: "short" });
-    });
-
-    charts.boxplot = new Chart(ctx, {
-        type: "boxplot",
-        data: { labels, datasets },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: { labels: { color: getCss("--text") } },
-                tooltip: {
-                    callbacks: {
-                        label: (item) => {
-                            const v = item.parsed;
-                            if (!v) return item.dataset.label;
-                            return [
-                                `${item.dataset.label}`,
-                                `  max: ${Math.round(v.max)}`,
-                                `  Q3:  ${Math.round(v.q3)}`,
-                                `  med: ${Math.round(v.median)}`,
-                                `  Q1:  ${Math.round(v.q1)}`,
-                                `  min: ${Math.round(v.min)}`,
-                                `  n:   ${v.items?.length ?? "—"}`,
-                            ];
+        const ctx = cell.querySelector("canvas");
+        charts[`boxplot-${tc}`] = new Chart(ctx, {
+            type: "boxplot",
+            data: {
+                labels,
+                datasets: [{
+                    label: tc,
+                    data: perWeek,
+                    backgroundColor: TIME_CLASS_COLORS[tc] + "55",
+                    borderColor: TIME_CLASS_COLORS[tc],
+                    borderWidth: 1.5,
+                    outlierBackgroundColor: TIME_CLASS_COLORS[tc],
+                    outlierRadius: 2,
+                    itemRadius: 0,
+                    medianColor: getCss("--text"),
+                }],
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            label: (item) => {
+                                const v = item.parsed;
+                                if (!v) return "";
+                                return [
+                                    `max: ${Math.round(v.max)}`,
+                                    `Q3:  ${Math.round(v.q3)}`,
+                                    `med: ${Math.round(v.median)}`,
+                                    `Q1:  ${Math.round(v.q1)}`,
+                                    `min: ${Math.round(v.min)}`,
+                                    `n:   ${v.items?.length ?? "—"}`,
+                                ];
+                            },
                         },
                     },
                 },
-            },
-            scales: {
-                x: {
-                    ticks: { color: getCss("--muted") },
-                    grid: { color: getCss("--border") },
+                scales: {
+                    x: {
+                        ticks: {
+                            color: getCss("--muted"),
+                            maxRotation: 0,
+                            autoSkip: true,
+                            autoSkipPadding: 8,
+                        },
+                        grid: { color: getCss("--border") },
+                    },
+                    y: {
+                        beginAtZero: false,
+                        grace: "8%",
+                        ticks: { color: getCss("--muted") },
+                        grid: { color: getCss("--border") },
+                        title: { display: true, text: "My rating", color: getCss("--muted") },
+                    },
                 },
-                y: {
-                    ticks: { color: getCss("--muted") },
-                    grid: { color: getCss("--border") },
-                    title: { display: true, text: "My rating", color: getCss("--muted") },
-                },
             },
-        },
-    });
+        });
+    }
 }
 
 function startOfWeek(d) {
@@ -545,6 +570,8 @@ function baseOptions({ yTitle, xTime }) {
                 grid: { color: getCss("--border") },
             },
             y: {
+                beginAtZero: false,
+                grace: "5%",
                 ticks: { color: getCss("--muted") },
                 grid: { color: getCss("--border") },
                 title: { display: !!yTitle, text: yTitle, color: getCss("--muted") },

@@ -18,6 +18,7 @@ Personal chess.com performance dashboard for **kxrook** (player_id 146392869, Gi
 - **Friendly time-class labels only.** Use `time_class` (rapid / blitz / bullet / daily) for display, never raw `time_control` (e.g. `"600"`).
 - **Outcome granularity preserved.** The "Outcomes" chart breaks results down by `reason` (checkmate, resignation, timeout, stalemate, agreement, repetition, 50-move, insufficient, abandonment, …) — don't collapse to W/L/D in that chart. The summary cards may collapse.
 - **Pre-Nov 2025 history is filtered out** at render time via `START_DATE_MS` in `dashboard.js`. The 9 sparse 2021/2023 games stay in `games.json` (so the data stays complete and we can roll back the filter trivially) but never reach the charts.
+- **Bullet games are excluded from every chart and the weekly table** (their rating sits far below blitz/rapid/daily and warps shared Y axes). They remain in the Current ratings cards. The exclusion happens once via `chartGames` in `render()`; chart functions don't need to know.
 
 ## Data schemas
 
@@ -69,12 +70,13 @@ Each bucket has `current`, `best`, `last_played`, and `source` (`"stats"` for th
 4. **Opponent rating over time** — scatter (per-game) + 20-game rolling average lines.
 5. **Outcomes** — stacked bar of granular reasons.
 6. **Win rate by time class** — horizontal stacked bar.
-7. **Monthly rating distribution** — boxplot per month per time-class. Min / Q1 / median / Q3 / max.
+7. **Weekly rating distribution** — one boxplot chart per time-class, last `BOXPLOT_WEEKS` weeks (default 26). Min / Q1 / median / Q3 / max.
 8. **Weekly performance** — table, rolling 12 weeks Mon-start. Three rows per game type (games, win %, Δ rating).
 
 ## Common edits
 
 - Add a new chart → register a `render*()` in `render()`, destroy with `destroyChart(key)` first, follow Chart.js patterns already used.
 - Change rolling window for the weekly table → `for (let i = 11; i >= 0; i--)` in `renderWeekly`.
+- Change rolling window for the weekly boxplots → `BOXPLOT_WEEKS` constant in `dashboard.js`.
 - Change start-of-history filter → `START_DATE_MS` in `dashboard.js`.
 - Adjust GitHub Action cron → `.github/workflows/refresh.yml` (cron is `17 6 * * *` = 06:17 UTC).
