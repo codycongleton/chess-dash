@@ -98,12 +98,98 @@ function render() {
     // to be useful on shared axes) but kept in the Current ratings cards.
     const chartGames = games.filter(g => g.time_class !== "bullet");
     renderSummary(games);
+    renderStrikeline(games);     // counts only — bullet stays in
     renderRating(chartGames);
     renderOpponent(chartGames);
     renderOutcome(chartGames);
     renderWinrate(chartGames);
     renderBoxplot(chartGames);
     renderWeekly(chartGames);
+}
+
+function renderStrikeline(games) {
+    destroyChart("strike");
+    const ctx = document.getElementById("strikeChart");
+    if (!games.length) {
+        ["strike-max", "strike-avg", "strike-total", "strike-start", "strike-end"]
+            .forEach(id => (document.getElementById(id).textContent = "—"));
+        return;
+    }
+
+    // Day buckets keyed by local YYYY-MM-DD.
+    const counts = new Map();
+    for (const g of games) {
+        const d = new Date(g.end_time * 1000);
+        const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+        counts.set(key, (counts.get(key) || 0) + 1);
+    }
+
+    const earliest = new Date(games[0].end_time * 1000);
+    earliest.setHours(0, 0, 0, 0);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const series = [];
+    const cur = new Date(earliest);
+    while (cur <= today) {
+        const key = `${cur.getFullYear()}-${String(cur.getMonth() + 1).padStart(2, "0")}-${String(cur.getDate()).padStart(2, "0")}`;
+        series.push({ x: cur.getTime(), y: counts.get(key) || 0 });
+        cur.setDate(cur.getDate() + 1);
+    }
+
+    const maxN = Math.max(...series.map(p => p.y));
+    const total = games.length;
+    const activeDays = counts.size;
+    const avgActive = (total / activeDays).toFixed(1);
+
+    const fmtShort = (d) => d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+    document.getElementById("strike-max").textContent = maxN;
+    document.getElementById("strike-avg").textContent = avgActive;
+    document.getElementById("strike-total").textContent = total.toLocaleString();
+    document.getElementById("strike-start").textContent = fmtShort(earliest);
+    document.getElementById("strike-end").textContent = fmtShort(today);
+
+    const accent = getCss("--accent");
+
+    charts.strike = new Chart(ctx, {
+        type: "line",
+        data: {
+            datasets: [{
+                data: series,
+                borderColor: accent,
+                borderWidth: 1.25,
+                pointRadius: 0,
+                pointHoverRadius: 3,
+                tension: 0,
+                fill: { target: "origin" },
+                backgroundColor: accent + "22",
+            }],
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: { mode: "nearest", intersect: false, axis: "x" },
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    displayColors: false,
+                    callbacks: {
+                        title: (items) =>
+                            new Date(items[0].parsed.x).toLocaleDateString(undefined, {
+                                weekday: "short", month: "short", day: "numeric",
+                            }),
+                        label: (item) =>
+                            `${item.parsed.y} game${item.parsed.y === 1 ? "" : "s"}`,
+                    },
+                },
+            },
+            layout: { padding: 0 },
+            scales: {
+                x: { type: "time", display: false },
+                y: { display: false, beginAtZero: true, suggestedMax: Math.max(maxN, 1) },
+            },
+        },
+    });
 }
 
 const BOXPLOT_WEEKS = 26;
