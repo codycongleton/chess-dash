@@ -1,0 +1,38 @@
+name: Refresh games.json
+
+on:
+  schedule:
+    - cron: "17 6 * * *"   # daily at 06:17 UTC
+  workflow_dispatch: {}     # manual trigger
+
+permissions:
+  contents: write
+
+concurrency:
+  group: refresh-games
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Fetch latest games
+        run: python scripts/fetch_games.py
+
+      - name: Commit if changed
+        run: |
+          git config user.name  "chess-dash bot"
+          git config user.email "actions@github.com"
+          if git diff --quiet -- data/games.json; then
+            echo "No changes."
+          else
+            git add data/games.json
+            git commit -m "data: refresh games.json"
+            git push
+          fi

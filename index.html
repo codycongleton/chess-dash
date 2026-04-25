@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>chess-dash · kxrook</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header>
+        <div class="title">
+            <h1>chess-dash</h1>
+            <a href="https://www.chess.com/member/kxrook" target="_blank" rel="noopener">kxrook ↗</a>
+        </div>
+        <div class="variant-toggle" role="tablist" aria-label="Variant">
+            <button data-variant="chess" class="active" role="tab">Standard</button>
+            <button data-variant="chess960" role="tab">Chess960</button>
+        </div>
+    </header>
+
+    <section class="ratings-block">
+        <h2 class="section-title">Current ratings</h2>
+        <div class="summary" id="ratings"></div>
+    </section>
+
+    <section class="summary" id="summary"></section>
+
+    <section class="grid">
+        <div class="card">
+            <h2>My rating over time</h2>
+            <p class="hint">By time class. Click legend items to toggle.</p>
+            <div class="chart-wrap"><canvas id="ratingChart"></canvas></div>
+        </div>
+
+        <div class="card">
+            <h2>Opponent rating over time</h2>
+            <p class="hint">Each dot = one game. Lines are 20-game rolling averages.</p>
+            <div class="chart-wrap"><canvas id="opponentChart"></canvas></div>
+        </div>
+
+        <div class="card">
+            <h2>Outcomes</h2>
+            <p class="hint">Win / loss / draw, broken down by ending reason.</p>
+            <div class="chart-wrap"><canvas id="outcomeChart"></canvas></div>
+        </div>
+
+        <div class="card">
+            <h2>Win rate by time class</h2>
+            <p class="hint">Rated games only.</p>
+            <div class="chart-wrap"><canvas id="winrateChart"></canvas></div>
+        </div>
+
+        <div class="card card-wide">
+            <h2>Monthly rating distribution</h2>
+            <p class="hint">Box = Q1–Q3 (middle 50%), line = median, whiskers = min / max. One group per month.</p>
+            <div class="chart-wrap chart-tall"><canvas id="boxplotChart"></canvas></div>
+        </div>
+    </section>
+
+    <section class="card weekly-card">
+        <h2>Weekly performance — last 12 weeks</h2>
+        <p class="hint">Filtered by variant. Weeks start Monday. Empty cells = no games.</p>
+        <div id="weeklyTable"></div>
+    </section>
+
+    <footer>
+        <span id="meta"></span>
+        <span class="src">data refreshed nightly via GitHub Actions · <a href="https://github.com/codycongleton/chess-dash" target="_blank" rel="noopener">source</a></span>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.6/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@sgratzl/chartjs-chart-boxplot@4.4.4/build/index.umd.min.js"></script>
+    <script src="dashboard.js"></script>
+</body>
+</html>

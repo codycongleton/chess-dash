@@ -1,0 +1,271 @@
+:root {
+    --bg: #0f1115;
+    --panel: #181b22;
+    --panel-2: #20242d;
+    --text: #e6e9ef;
+    --muted: #8a93a6;
+    --accent: #7aa2f7;
+    --win: #9ece6a;
+    --loss: #f7768e;
+    --draw: #e0af68;
+    --border: #2a2f3a;
+}
+
+@media (prefers-color-scheme: light) {
+    :root {
+        --bg: #f7f8fa;
+        --panel: #ffffff;
+        --panel-2: #f0f2f6;
+        --text: #1c1f26;
+        --muted: #5b6478;
+        --accent: #3b6fd6;
+        --win: #2f8f3a;
+        --loss: #c83a4f;
+        --draw: #b8801a;
+        --border: #e2e5ec;
+    }
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+    margin: 0;
+    padding: 0;
+    background: var(--bg);
+    color: var(--text);
+    font: 15px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+    padding: 1.25rem 1.5rem;
+    border-bottom: 1px solid var(--border);
+}
+
+.title {
+    display: flex;
+    align-items: baseline;
+    gap: 0.75rem;
+}
+
+h1 {
+    font-size: 1.25rem;
+    margin: 0;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+}
+
+.title a {
+    color: var(--muted);
+    text-decoration: none;
+    font-size: 0.9rem;
+}
+
+.title a:hover { color: var(--accent); }
+
+.variant-toggle {
+    display: flex;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 3px;
+}
+
+.variant-toggle button {
+    background: transparent;
+    color: var(--muted);
+    border: 0;
+    padding: 0.4rem 0.9rem;
+    font: inherit;
+    font-size: 0.9rem;
+    cursor: pointer;
+    border-radius: 6px;
+}
+
+.variant-toggle button.active {
+    background: var(--panel-2);
+    color: var(--text);
+}
+
+.summary {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 0.75rem;
+    padding: 1rem 1.5rem 0;
+}
+
+.ratings-block { padding-top: 0.5rem; }
+
+.ratings-block .summary { padding-top: 0.5rem; }
+
+.section-title {
+    margin: 0;
+    padding: 0.5rem 1.5rem 0;
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--muted);
+}
+
+.stat {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 0.85rem 1rem;
+}
+
+.stat .label {
+    color: var(--muted);
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.stat .label.sub {
+    margin-top: 0.25rem;
+    text-transform: none;
+    letter-spacing: 0;
+    font-size: 0.75rem;
+}
+
+.stat .value {
+    font-size: 1.5rem;
+    font-weight: 600;
+    margin-top: 0.15rem;
+}
+
+.stat .delta {
+    font-size: 0.85rem;
+    margin-left: 0.4rem;
+}
+
+.delta.up { color: var(--win); }
+.delta.down { color: var(--loss); }
+.delta.flat { color: var(--muted); }
+
+.grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
+    gap: 1rem;
+    padding: 1rem 1.5rem;
+}
+
+.card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1rem 1.25rem 1.25rem;
+}
+
+.card h2 {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 600;
+}
+
+.card .hint {
+    margin: 0.15rem 0 0.75rem;
+    color: var(--muted);
+    font-size: 0.8rem;
+}
+
+.chart-wrap {
+    position: relative;
+    height: 320px;
+}
+
+.chart-wrap.chart-tall {
+    height: 420px;
+}
+
+.card.card-wide {
+    grid-column: 1 / -1;
+}
+
+.weekly-card {
+    margin: 0 1.5rem 1rem;
+}
+
+.table-scroll {
+    overflow-x: auto;
+    margin: 0 -0.5rem;
+}
+
+table.weekly {
+    border-collapse: collapse;
+    font-size: 0.85rem;
+    width: 100%;
+    min-width: 760px;
+}
+
+.weekly th,
+.weekly td {
+    padding: 0.4rem 0.6rem;
+    text-align: right;
+    border-bottom: 1px solid var(--border);
+    white-space: nowrap;
+}
+
+.weekly th {
+    font-weight: 600;
+    color: var(--muted);
+    font-size: 0.78rem;
+}
+
+.weekly th.row-label,
+.weekly th.metric,
+.weekly td.row-label,
+.weekly td.metric {
+    text-align: left;
+}
+
+.weekly td.row-label {
+    font-weight: 600;
+    padding-right: 1rem;
+    vertical-align: middle;
+}
+
+.weekly td.metric {
+    color: var(--muted);
+    padding-right: 0.75rem;
+}
+
+.weekly tr.row-first td {
+    padding-top: 0.55rem;
+}
+
+.weekly tr.row-last td {
+    padding-bottom: 0.55rem;
+    border-bottom: 2px solid var(--border);
+}
+
+.weekly td.empty {
+    color: var(--muted);
+    opacity: 0.35;
+}
+
+.weekly td.pos { color: var(--win); }
+.weekly td.neg { color: var(--loss); }
+
+footer {
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    padding: 1rem 1.5rem 2rem;
+    color: var(--muted);
+    font-size: 0.8rem;
+}
+
+footer a { color: var(--muted); }
+footer a:hover { color: var(--accent); }
+
+@media (max-width: 600px) {
+    header, .summary, .grid, footer { padding-left: 1rem; padding-right: 1rem; }
+    .chart-wrap { height: 260px; }
+}
