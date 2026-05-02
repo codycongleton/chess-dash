@@ -79,8 +79,10 @@ function renderActivity(canvasId, key, timeClass) {
             const t = g.end_time * 1000;
             return t >= start && t < end;
         });
-        const wins = inDay.filter(g => g.outcome === "win").length;
-        return { played: inDay.length, wins, other: inDay.length - wins };
+        const win  = inDay.filter(g => g.outcome === "win").length;
+        const loss = inDay.filter(g => g.outcome === "loss").length;
+        const draw = inDay.filter(g => g.outcome === "draw").length;
+        return { played: inDay.length, win, loss, draw };
     });
 
     const labels = days.map(d =>
@@ -93,15 +95,21 @@ function renderActivity(canvasId, key, timeClass) {
             labels,
             datasets: [
                 {
-                    label: "Wins",
-                    data: perDay.map(d => d.wins),
+                    label: "Win",
+                    data: perDay.map(d => d.win),
                     backgroundColor: getCss("--win"),
                     borderWidth: 0,
                 },
                 {
-                    label: "Other",
-                    data: perDay.map(d => d.other),
-                    backgroundColor: getCss("--muted") + "55",
+                    label: "Loss",
+                    data: perDay.map(d => d.loss),
+                    backgroundColor: getCss("--loss"),
+                    borderWidth: 0,
+                },
+                {
+                    label: "Draw",
+                    data: perDay.map(d => d.draw),
+                    backgroundColor: getCss("--draw"),
                     borderWidth: 0,
                 },
             ],
