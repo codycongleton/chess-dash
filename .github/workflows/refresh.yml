@@ -25,14 +25,19 @@ jobs:
       - name: Fetch latest games
         run: python scripts/fetch_games.py
 
-      - name: Commit if changed
+      - name: Commit refresh
         run: |
           git config user.name  "chess-dash bot"
           git config user.email "actions@github.com"
-          if git diff --quiet -- data/games.json; then
+          git add data/games.json data/ratings.json
+          if git diff --cached --quiet; then
             echo "No changes."
           else
-            git add data/games.json
-            git commit -m "data: refresh games.json"
+            if git diff --cached --quiet -- data/games.json; then
+              msg="data: refresh ratings.json"
+            else
+              msg="data: refresh games.json"
+            fi
+            git commit -m "$msg"
             git push
           fi

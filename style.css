@@ -197,6 +197,17 @@ h1 {
     font-variant-numeric: tabular-nums;
 }
 
+.activity-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    padding: 1rem 1.5rem 0;
+}
+
+@media (max-width: 760px) {
+    .activity-row { grid-template-columns: 1fr; }
+}
+
 .grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));

@@ -50,9 +50,91 @@ async function init() {
 
     setMeta();
     renderCurrentRatings();
+    renderActivity("activityDailyChart", "activityDaily", "daily");
+    renderActivity("activityRapidChart", "activityRapid", "rapid");
     renderBoxplot();
     renderWeekly();
     render();
+}
+
+function renderActivity(canvasId, key, timeClass) {
+    destroyChart(key);
+    const ctx = document.getElementById(canvasId);
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const days = [];
+    for (let i = 13; i >= 0; i--) {
+        const d = new Date(today);
+        d.setDate(d.getDate() - i);
+        days.push(d);
+    }
+
+    const sub = allGames.filter(g => g.rules === "chess" && g.time_class === timeClass);
+
+    const perDay = days.map(d => {
+        const start = d.getTime();
+        const end = start + 24 * 60 * 60 * 1000;
+        const inDay = sub.filter(g => {
+            const t = g.end_time * 1000;
+            return t >= start && t < end;
+        });
+        const wins = inDay.filter(g => g.outcome === "win").length;
+        return { played: inDay.length, wins, other: inDay.length - wins };
+    });
+
+    const labels = days.map(d =>
+        d.toLocaleDateString(undefined, { month: "short", day: "numeric" })
+    );
+
+    charts[key] = new Chart(ctx, {
+        type: "bar",
+        data: {
+            labels,
+            datasets: [
+                {
+                    label: "Wins",
+                    data: perDay.map(d => d.wins),
+                    backgroundColor: getCss("--win"),
+                    borderWidth: 0,
+                },
+                {
+                    label: "Other",
+                    data: perDay.map(d => d.other),
+                    backgroundColor: getCss("--muted") + "55",
+                    borderWidth: 0,
+                },
+            ],
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { labels: { color: getCss("--text") } },
+                tooltip: {
+                    mode: "index",
+                    intersect: false,
+                    callbacks: {
+                        afterTitle: (items) => `played: ${perDay[items[0].dataIndex].played}`,
+                    },
+                },
+            },
+            scales: {
+                x: {
+                    stacked: true,
+                    ticks: { color: getCss("--muted"), maxRotation: 0, autoSkip: true, autoSkipPadding: 8 },
+                    grid: { color: getCss("--border") },
+                },
+                y: {
+                    stacked: true,
+                    beginAtZero: true,
+                    ticks: { color: getCss("--muted"), precision: 0 },
+                    grid: { color: getCss("--border") },
+                    title: { display: true, text: "Games", color: getCss("--muted") },
+                },
+            },
+        },
+    });
 }
 
 function renderCurrentRatings() {
@@ -90,8 +172,16 @@ function renderCurrentRatings() {
 function setMeta() {
     const last = allGames[allGames.length - 1];
     if (!last) return;
-    const when = new Date(last.end_time * 1000).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
-    document.getElementById("meta").textContent = `${allGames.length} rated games · last played ${when}`;
+    const fmt = (ts) => new Date(ts).toLocaleString(undefined, {
+        year: "numeric", month: "short", day: "numeric",
+        hour: "numeric", minute: "2-digit",
+    });
+    const lastGame = fmt(last.end_time * 1000);
+    const parts = [`${allGames.length} rated games`, `last game ${lastGame}`];
+    if (ratingsData?.fetched_at) {
+        parts.push(`refreshed ${fmt(ratingsData.fetched_at * 1000)}`);
+    }
+    document.getElementById("meta").textContent = parts.join(" · ");
 }
 
 function render() {
