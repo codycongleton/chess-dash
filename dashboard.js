@@ -52,9 +52,64 @@ async function init() {
     renderCurrentRatings();
     renderActivity("activityDailyChart", "activityDaily", "daily");
     renderActivity("activityRapidChart", "activityRapid", "rapid");
+    renderStreak();
     renderBoxplot();
     renderWeekly();
     render();
+}
+
+const STREAK_WINDOW = 30;
+const STREAK_ROWS = [
+    { rules: "chess",    tc: "daily",  label: "Standard · Daily"  },
+    { rules: "chess",    tc: "rapid",  label: "Standard · Rapid"  },
+    { rules: "chess",    tc: "blitz",  label: "Standard · Blitz"  },
+    { rules: "chess",    tc: "bullet", label: "Standard · Bullet" },
+    { rules: "chess960", tc: "daily",  label: "960 · Daily"       },
+    { rules: "chess960", tc: "rapid",  label: "960 · Rapid"       },
+    { rules: "chess960", tc: "blitz",  label: "960 · Blitz"       },
+    { rules: "chess960", tc: "bullet", label: "960 · Bullet"      },
+];
+
+function renderStreak() {
+    const root = document.getElementById("streakGrid");
+    root.innerHTML = "";
+
+    for (const { rules, tc, label } of STREAK_ROWS) {
+        const sub = allGames
+            .filter(g => g.rules === rules && g.time_class === tc)
+            .slice(-STREAK_WINDOW);
+        if (sub.length === 0) continue;
+
+        const row = document.createElement("div");
+        row.className = "streak-row";
+
+        const lbl = document.createElement("span");
+        lbl.className = "streak-label";
+        lbl.textContent = label;
+        row.appendChild(lbl);
+
+        const cells = document.createElement("div");
+        cells.className = "streak-cells";
+
+        const padding = STREAK_WINDOW - sub.length;
+        for (let i = 0; i < padding; i++) {
+            const cell = document.createElement("span");
+            cell.className = "streak-cell empty";
+            cells.appendChild(cell);
+        }
+
+        for (const g of sub) {
+            const cell = document.createElement("span");
+            cell.className = `streak-cell ${g.outcome}`;
+            const d = new Date(g.end_time * 1000);
+            const dateStr = d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+            cell.title = `${dateStr} · vs ${g.opp_username ?? "?"} (${g.opp_rating ?? "?"}) · ${g.outcome}`;
+            cells.appendChild(cell);
+        }
+
+        row.appendChild(cells);
+        root.appendChild(row);
+    }
 }
 
 function renderActivity(canvasId, key, timeClass) {

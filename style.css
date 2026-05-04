@@ -378,7 +378,83 @@ footer {
 footer a { color: var(--muted); }
 footer a:hover { color: var(--accent); }
 
+.streak-section {
+    padding: 0.75rem 1.5rem 0;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    align-items: start;
+}
+
+.streak-card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 0.7rem 1.1rem 0.85rem;
+}
+
+.streak-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    font-size: 0.78rem;
+    color: var(--muted);
+    margin-bottom: 0.55rem;
+}
+
+.streak-title {
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-weight: 600;
+}
+
+.streak-hint { font-size: 0.75rem; }
+
+.legend-win  { color: var(--win); }
+.legend-loss { color: var(--loss); }
+.legend-draw { color: var(--draw); }
+
+.streak-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.streak-row {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+}
+
+.streak-label {
+    width: 128px;
+    flex-shrink: 0;
+    font-size: 0.74rem;
+    color: var(--muted);
+    text-align: right;
+}
+
+.streak-cells {
+    display: flex;
+    gap: 2px;
+}
+
+.streak-cell {
+    width: 10px;
+    height: 10px;
+    border-radius: 2px;
+    flex-shrink: 0;
+}
+
+.streak-cell.win   { background: var(--win); }
+.streak-cell.loss  { background: var(--loss); }
+.streak-cell.draw  { background: var(--draw); }
+.streak-cell.empty { background: transparent; }
+
 @media (max-width: 600px) {
     header, .summary, .grid, footer { padding-left: 1rem; padding-right: 1rem; }
     .chart-wrap { height: 260px; }
+    .streak-section { padding-left: 1rem; padding-right: 1rem; }
+    .streak-label { width: 100px; }
 }
