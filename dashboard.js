@@ -53,6 +53,7 @@ async function init() {
     renderActivity("activityDailyChart", "activityDaily", "daily");
     renderActivity("activityRapidChart", "activityRapid", "rapid");
     renderStreak();
+    renderGameCountRating();
     renderBoxplot();
     renderWeekly();
     render();
@@ -343,6 +344,90 @@ function renderStrikeline(games) {
             scales: {
                 x: { type: "time", display: false },
                 y: { display: false, beginAtZero: true, suggestedMax: Math.max(maxN, 1) },
+            },
+        },
+    });
+}
+
+function renderGameCountRating() {
+    destroyChart("gameCountRating");
+    const ctx = document.getElementById("gameCountRatingChart");
+
+    const STEP = 20;
+    const data = allGames.filter(g => g.time_class !== "bullet");
+    const datasets = [];
+
+    for (const { rules, label: variantLabel } of [
+        { rules: "chess",    label: "Standard" },
+        { rules: "chess960", label: "Chess960" },
+    ]) {
+        const variantGames = data.filter(g => g.rules === rules);
+        const presentTCs = TIME_CLASSES.filter(
+            tc => tc !== "bullet" && variantGames.some(g => g.time_class === tc)
+        );
+
+        for (const tc of presentTCs) {
+            const sub = variantGames
+                .filter(g => g.time_class === tc)
+                .slice()
+                .sort((a, b) => a.end_time - b.end_time);
+
+            const points = [];
+            for (let i = STEP - 1; i < sub.length; i += STEP) {
+                points.push({ x: i + 1, y: sub[i].my_rating });
+            }
+            if (!points.length) continue;
+
+            datasets.push({
+                label: `${variantLabel} · ${tc}`,
+                data: points,
+                borderColor: TIME_CLASS_COLORS[tc],
+                backgroundColor: TIME_CLASS_COLORS[tc],
+                borderWidth: 2,
+                borderDash: rules === "chess960" ? [5, 3] : [],
+                pointRadius: 3,
+                pointHoverRadius: 5,
+                tension: 0.2,
+            });
+        }
+    }
+
+    if (!datasets.length) return;
+
+    charts.gameCountRating = new Chart(ctx, {
+        type: "line",
+        data: { datasets },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: { mode: "nearest", intersect: false },
+            plugins: {
+                legend: { labels: { color: getCss("--text") } },
+                tooltip: {
+                    callbacks: {
+                        title: (items) => `Game #${items[0].parsed.x}`,
+                        label: (item) => `${item.dataset.label}: ${item.parsed.y}`,
+                    },
+                },
+            },
+            scales: {
+                x: {
+                    type: "linear",
+                    ticks: {
+                        color: getCss("--muted"),
+                        stepSize: STEP,
+                        callback: v => `#${v}`,
+                    },
+                    grid: { color: getCss("--border") },
+                    title: { display: true, text: "Games played", color: getCss("--muted") },
+                },
+                y: {
+                    beginAtZero: false,
+                    grace: "5%",
+                    ticks: { color: getCss("--muted") },
+                    grid: { color: getCss("--border") },
+                    title: { display: true, text: "Rating", color: getCss("--muted") },
+                },
             },
         },
     });
