@@ -791,44 +791,65 @@ function renderOutcome(games) {
     destroyChart("outcome");
     const ctx = document.getElementById("outcomeChart");
 
-    // Group: outcome -> reason -> count.
-    const counts = { win: {}, loss: {}, draw: {} };
-    for (const g of games) {
-        counts[g.outcome][g.reason] = (counts[g.outcome][g.reason] || 0) + 1;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const days = [];
+    for (let i = 29; i >= 0; i--) {
+        const d = new Date(today);
+        d.setDate(d.getDate() - i);
+        days.push(d);
     }
 
-    const reasonsPresent = REASON_ORDER.filter(r =>
-        counts.win[r] || counts.loss[r] || counts.draw[r]
-    );
+    const perDay = days.map(d => {
+        const start = d.getTime();
+        const end = start + 24 * 60 * 60 * 1000;
+        const inDay = games.filter(g => {
+            const t = g.end_time * 1000;
+            return t >= start && t < end;
+        });
+        const win  = inDay.filter(g => g.outcome === "win").length;
+        const loss = inDay.filter(g => g.outcome === "loss").length;
+        const draw = inDay.filter(g => g.outcome === "draw").length;
+        return { win, loss, draw, total: inDay.length };
+    });
 
-    // One stacked bar per reason, segmented by outcome.
-    const datasets = ["win", "loss", "draw"].map(o => ({
-        label: o,
-        data: reasonsPresent.map(r => counts[o][r] || 0),
-        backgroundColor: OUTCOME_COLORS[o],
-        borderWidth: 0,
-    }));
+    const labels = days.map(d =>
+        d.toLocaleDateString(undefined, { month: "short", day: "numeric" })
+    );
 
     charts.outcome = new Chart(ctx, {
         type: "bar",
-        data: { labels: reasonsPresent, datasets },
+        data: {
+            labels,
+            datasets: [
+                { label: "Win",  data: perDay.map(d => d.win),  backgroundColor: OUTCOME_COLORS.win,  borderWidth: 0 },
+                { label: "Loss", data: perDay.map(d => d.loss), backgroundColor: OUTCOME_COLORS.loss, borderWidth: 0 },
+                { label: "Draw", data: perDay.map(d => d.draw), backgroundColor: OUTCOME_COLORS.draw, borderWidth: 0 },
+            ],
+        },
         options: {
             responsive: true,
             maintainAspectRatio: false,
             plugins: {
                 legend: { labels: { color: getCss("--text") } },
-                tooltip: { mode: "index", intersect: false },
+                tooltip: {
+                    mode: "index",
+                    intersect: false,
+                    callbacks: {
+                        afterTitle: (items) => `total: ${perDay[items[0].dataIndex].total}`,
+                    },
+                },
             },
             scales: {
                 x: {
                     stacked: true,
-                    ticks: { color: getCss("--muted") },
+                    ticks: { color: getCss("--muted"), maxRotation: 0, autoSkip: true, autoSkipPadding: 8 },
                     grid: { color: getCss("--border") },
                 },
                 y: {
                     stacked: true,
                     beginAtZero: true,
-                    ticks: { color: getCss("--muted") },
+                    ticks: { color: getCss("--muted"), precision: 0 },
                     grid: { color: getCss("--border") },
                     title: { display: true, text: "Games", color: getCss("--muted") },
                 },
