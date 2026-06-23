@@ -1,12 +1,12 @@
 {
-  "fetched_at": 1782131214,
+  "fetched_at": 1782209048,
   "username": "kxrook",
   "ratings": {
     "chess": {
       "daily": {
         "current": 1028,
         "best": 1058,
-        "last_played": 1782079155,
+        "last_played": 1782187110,
         "source": "stats"
       },
       "rapid": {
