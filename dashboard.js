@@ -50,6 +50,7 @@ async function init() {
 
     setMeta();
     renderCurrentRatings();
+    renderDiverge();
     renderActivity("activityDailyChart", "activityDaily", "daily");
     renderActivity("activityRapidChart", "activityRapid", "rapid");
     renderStreak();
@@ -110,6 +111,165 @@ function renderStreak() {
 
         row.appendChild(cells);
         root.appendChild(row);
+    }
+}
+
+// Daily wins-above / losses-below, one row per (variant, time-class).
+// Ignores the variant toggle (both variants are stacked, like the boxplots
+// and the weekly table) and is rendered once at init. Bullet stays in:
+// the Y axis is a game count, not a rating, so it doesn't warp anything —
+// same reasoning as the strikeline.
+const DIVERGE_ROWS = STREAK_ROWS;
+
+function dayKey(d) {
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+function renderDiverge() {
+    for (const { rules, tc } of DIVERGE_ROWS) destroyChart(`diverge-${rules}-${tc}`);
+
+    const root = document.getElementById("divergeGrid");
+    root.innerHTML = "";
+
+    if (!allGames.length) {
+        root.innerHTML = `<p class="hint">No games yet.</p>`;
+        document.getElementById("diverge-start").textContent = "—";
+        document.getElementById("diverge-end").textContent = "—";
+        return;
+    }
+
+    // One shared day domain so every row lines up vertically.
+    const earliest = new Date(allGames[0].end_time * 1000);
+    earliest.setHours(0, 0, 0, 0);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const days = [];
+    for (const cur = new Date(earliest); cur <= today; cur.setDate(cur.getDate() + 1)) {
+        days.push(new Date(cur));
+    }
+
+    // Tally per (row, day) first so the Y scale can be shared across rows.
+    const rows = [];
+    let peak = 1;
+
+    for (const { rules, tc, label } of DIVERGE_ROWS) {
+        const sub = allGames.filter(g => g.rules === rules && g.time_class === tc);
+        if (!sub.length) continue;
+
+        const tally = new Map(); // day key -> { win, loss, draw }
+        for (const g of sub) {
+            const key = dayKey(new Date(g.end_time * 1000));
+            const bucket = tally.get(key) || { win: 0, loss: 0, draw: 0 };
+            bucket[g.outcome] += 1;
+            tally.set(key, bucket);
+        }
+
+        const wins = [], losses = [], draws = [];
+        for (const d of days) {
+            const b = tally.get(dayKey(d)) || { win: 0, loss: 0, draw: 0 };
+            const x = d.getTime();
+            wins.push({ x, y: b.win });
+            losses.push({ x, y: -b.loss });
+            draws.push(b.draw);
+            peak = Math.max(peak, b.win, b.loss);
+        }
+
+        rows.push({
+            rules, tc, label, days, wins, losses, draws,
+            totals: {
+                win:  sub.filter(g => g.outcome === "win").length,
+                loss: sub.filter(g => g.outcome === "loss").length,
+                draw: sub.filter(g => g.outcome === "draw").length,
+            },
+        });
+    }
+
+    const fmtShort = (d) => d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+    document.getElementById("diverge-start").textContent = fmtShort(earliest);
+    document.getElementById("diverge-end").textContent = fmtShort(today);
+
+    const winColor = getCss("--win");
+    const lossColor = getCss("--loss");
+    const border = getCss("--border");
+
+    for (const row of rows) {
+        const cell = document.createElement("div");
+        cell.className = "diverge-row";
+        cell.innerHTML = `
+            <div class="diverge-label">
+                <span class="diverge-name">${row.label}</span>
+                <span class="diverge-record">${row.totals.win}W · ${row.totals.loss}L${row.totals.draw ? ` · ${row.totals.draw}D` : ""}</span>
+            </div>
+            <div class="diverge-wrap"><canvas></canvas></div>
+        `;
+        root.appendChild(cell);
+
+        charts[`diverge-${row.rules}-${row.tc}`] = new Chart(cell.querySelector("canvas"), {
+            type: "bar",
+            data: {
+                datasets: [
+                    { label: "wins",   data: row.wins,   backgroundColor: winColor },
+                    { label: "losses", data: row.losses, backgroundColor: lossColor },
+                ].map(ds => ({ ...ds, barPercentage: 1, categoryPercentage: 1, maxBarThickness: 6 })),
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: { mode: "index", intersect: false, axis: "x" },
+                layout: { padding: 0 },
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        displayColors: false,
+                        callbacks: {
+                            title: (items) =>
+                                new Date(items[0].parsed.x).toLocaleDateString(undefined, {
+                                    weekday: "short", month: "short", day: "numeric",
+                                }),
+                            label: () => "",
+                            afterBody: (items) => {
+                                const i = items[0].dataIndex;
+                                const w = row.wins[i].y;
+                                const l = -row.losses[i].y;
+                                const d = row.draws[i];
+                                const parts = [`${w}W`, `${l}L`];
+                                if (d) parts.push(`${d}D`);
+                                return `${row.label} · ${parts.join(" · ")}`;
+                            },
+                        },
+                    },
+                },
+                scales: {
+                    x: {
+                        type: "time",
+                        display: false,
+                        min: earliest.getTime(),
+                        max: today.getTime(),
+                        offset: false,
+                        stacked: true,
+                    },
+                    y: {
+                        // Symmetric and shared across rows so bar heights are
+                        // comparable between game types.
+                        min: -peak,
+                        max: peak,
+                        stacked: true,
+                        // Scale stays "displayed" so the zero gridline draws,
+                        // but ticks/labels/border are all suppressed.
+                        ticks: { display: false },
+                        border: { display: false },
+                        grid: {
+                            color: (c) => (c.tick.value === 0 ? border : "transparent"),
+                            drawTicks: false,
+                        },
+                        afterBuildTicks: (axis) => {
+                            axis.ticks = [{ value: -peak }, { value: 0 }, { value: peak }];
+                        },
+                    },
+                },
+            },
+        });
     }
 }
 

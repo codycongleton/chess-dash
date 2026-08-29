@@ -67,6 +67,7 @@ Each bucket has `current`, `best`, `last_played`, and `source` (`"stats"` for th
 1. **Current ratings** (top, always full set) — variant × time-class cards. Source: `ratings.json`.
 2. **Variant-filtered summary** — total games, win/draw rate, white/black win rate.
 2a. **Strikeline (Games per day)** — minimal sparkline of daily game count. Variant-filtered but **does not** drop bullet (it's a count of activity, not a rating chart). Reference scale shown in the header (max / avg per active day / total) and the X-axis bounds at the bottom.
+2b. **Daily wins vs losses** — diverging daily bars, one row per (variant, time-class), sharing a single day domain (first game → today) so rows line up vertically. Wins go up from the zero line, losses down. **Ignores the variant toggle** (both variants stacked) and is rendered once at init. Y is symmetric and shared across all rows (`peak` = largest single-day win or loss count anywhere) so bar heights are comparable between game types. Bullet **is** included — the axis is a game count, not a rating, same reasoning as the strikeline. Draws aren't bar-encoded (only 19 of ~490 games); they appear in the tooltip and the row's `W · L · D` record.
 3. **My rating over time** — line per time-class.
 4. **Opponent rating over time** — scatter (per-game) + 20-game rolling average lines.
 5. **Outcomes** — stacked bar of granular reasons.

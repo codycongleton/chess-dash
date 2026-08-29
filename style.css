@@ -197,6 +197,86 @@ h1 {
     font-variant-numeric: tabular-nums;
 }
 
+.diverge-section {
+    padding: 0.75rem 1.5rem 0;
+}
+
+.diverge-card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 0.7rem 1.1rem 0.55rem;
+}
+
+.diverge-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    font-size: 0.78rem;
+    color: var(--muted);
+    margin-bottom: 0.45rem;
+}
+
+.diverge-title {
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-weight: 600;
+}
+
+.diverge-hint { font-size: 0.75rem; }
+
+.diverge-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.diverge-row {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+}
+
+.diverge-label {
+    width: 128px;
+    flex-shrink: 0;
+    text-align: right;
+    line-height: 1.15;
+}
+
+.diverge-name {
+    display: block;
+    font-size: 0.74rem;
+    color: var(--muted);
+}
+
+.diverge-record {
+    display: block;
+    font-size: 0.66rem;
+    color: var(--muted);
+    opacity: 0.72;
+    font-variant-numeric: tabular-nums;
+}
+
+.diverge-wrap {
+    position: relative;
+    flex: 1;
+    min-width: 0;
+    height: 46px;
+}
+
+.diverge-axis {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.7rem;
+    color: var(--muted);
+    margin-top: 0.15rem;
+    padding-left: calc(128px + 0.6rem);
+    font-variant-numeric: tabular-nums;
+}
+
 .activity-row {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -457,4 +537,7 @@ footer a:hover { color: var(--accent); }
     .chart-wrap { height: 260px; }
     .streak-section { padding-left: 1rem; padding-right: 1rem; }
     .streak-label { width: 100px; }
+    .diverge-section { padding-left: 1rem; padding-right: 1rem; }
+    .diverge-label { width: 96px; }
+    .diverge-axis { padding-left: calc(96px + 0.6rem); }
 }
