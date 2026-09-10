@@ -9,6 +9,7 @@ Personal chess.com performance dashboard for **kxrook** (player_id 146392869, Gi
 - `scripts/fetch_games.py` — pulls Chess.com public API, writes `data/games.json` and `data/ratings.json`. Pure stdlib (`urllib`); no deps.
 - `.github/workflows/refresh.yml` — runs the fetch nightly (06:17 UTC), commits diffs, pushes. `workflow_dispatch` for manual.
 - Local preview: `python3 -m http.server 8765` from project root, then `http://localhost:8765/`.
+- **Cache-busting:** GitHub Pages serves everything with `cache-control: max-age=600` and no way to override headers, so a browser that loaded the page in the last 10 minutes keeps using the old `dashboard.js` / `style.css` while picking up the new `index.html` — which renders as a half-broken page (unstyled sections, missing charts), not an obvious error. Both are therefore loaded as `dashboard.js?v=<YYYYMMDD>` / `style.css?v=<YYYYMMDD>`. **Bump both stamps in `index.html` whenever you change either file.** (The JSON fetches don't need this — they already pass `cache: "no-cache"`.)
 
 ## Hard rules (must hold across all charts/aggregations)
 
