@@ -33,6 +33,26 @@
         </div>
     </section>
 
+    <section class="target-section">
+        <div class="target-card">
+            <div class="target-header">
+                <span class="target-title">Weekly loss target</span>
+                <span class="target-stats">
+                    target <strong>15</strong>/week ·
+                    on target <strong id="target-hits">—</strong> ·
+                    avg <strong id="target-avg">—</strong> ·
+                    best <strong id="target-best">—</strong>
+                </span>
+            </div>
+            <div class="target-wrap"><canvas id="targetChart"></canvas></div>
+            <div class="target-hint">
+                Any game type · bars run from the 15-loss line:
+                <span class="legend-win">■</span> target met,
+                <span class="legend-draw">■</span> short. Faded bar = this week, still in progress.
+            </div>
+        </div>
+    </section>
+
     <section class="ratings-block">
         <h2 class="section-title">Current ratings</h2>
         <div class="summary" id="ratings"></div>

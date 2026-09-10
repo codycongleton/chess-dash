@@ -50,6 +50,7 @@ async function init() {
 
     setMeta();
     renderLossCounter();
+    renderLossTarget();
     renderCurrentRatings();
     renderDiverge();
     renderActivity("activityDailyChart", "activityDaily", "daily");
@@ -129,6 +130,117 @@ function paceText(losses, total) {
 
 
 const STREAK_WINDOW = 30;
+// Weekly loss target — one bar per week, measured from the WEEKLY_LOSS_TARGET
+// line rather than from zero, so the X axis *is* the target and a bar's
+// direction reads as over / under at a glance. Any game type (all variants,
+// all time classes, bullet included) and rendered once at init: this tracks
+// the grind as a whole, so the variant toggle doesn't apply.
+const WEEKLY_LOSS_TARGET = 15;
+const TARGET_WEEKS = 26;
+
+function renderLossTarget() {
+    destroyChart("target");
+    const ctx = document.getElementById("targetChart");
+
+    const losses = allGames.filter(g => g.outcome === "loss");
+    const thisMonday = startOfWeek(new Date());
+    const weeks = [];
+    for (let i = TARGET_WEEKS - 1; i >= 0; i--) {
+        const d = new Date(thisMonday);
+        d.setDate(d.getDate() - i * 7);
+        weeks.push(d);
+    }
+
+    const counts = weeks.map(w => {
+        const end = w.getTime() + 7 * 86400000;
+        return losses.filter(g => {
+            const t = g.end_time * 1000;
+            return t >= w.getTime() && t < end;
+        }).length;
+    });
+
+    const current = counts.length - 1; // this week is still filling up
+    const done = counts.slice(0, current);
+    const hits = done.filter(n => n >= WEEKLY_LOSS_TARGET).length;
+    const avg = done.length ? done.reduce((a, b) => a + b, 0) / done.length : 0;
+    const best = counts.length ? Math.max(...counts) : 0;
+    document.getElementById("target-hits").textContent = `${hits} / ${done.length} wks`;
+    document.getElementById("target-avg").textContent = avg.toFixed(1);
+    document.getElementById("target-best").textContent = best;
+
+    const winColor = getCss("--win");
+    const shortColor = getCss("--draw");
+    const colors = counts.map((n, i) => {
+        const c = n >= WEEKLY_LOSS_TARGET ? winColor : shortColor;
+        return i === current ? `${c}66` : c;   // this week is partial — fade it
+    });
+
+    // The floor is fixed at 0 losses (= -TARGET from the line); the ceiling is
+    // whatever the best week cleared, plus a little headroom. Keeping the
+    // ceiling tight means the target line doesn't drift to the top of an empty
+    // half when no week has beaten it yet.
+    const over = Math.max(0, ...counts.map(n => n - WEEKLY_LOSS_TARGET));
+    const ceiling = Math.max(over + 1, 4);
+
+    charts.target = new Chart(ctx, {
+        type: "bar",
+        data: {
+            labels: weeks.map(d => d.toLocaleDateString(undefined, { month: "short", day: "numeric" })),
+            datasets: [{
+                data: counts.map(n => n - WEEKLY_LOSS_TARGET),
+                backgroundColor: colors,
+                borderRadius: 2,
+                maxBarThickness: 26,
+            }],
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    displayColors: false,
+                    callbacks: {
+                        label: (item) => {
+                            const n = counts[item.dataIndex];
+                            const diff = n - WEEKLY_LOSS_TARGET;
+                            const rel = diff === 0 ? "exactly on target"
+                                : diff > 0 ? `${diff} over target`
+                                : `${-diff} short`;
+                            const partial = item.dataIndex === current ? " (week in progress)" : "";
+                            return `${n} losses · ${rel}${partial}`;
+                        },
+                    },
+                },
+            },
+            scales: {
+                x: {
+                    grid: { display: false },
+                    border: { color: getCss("--muted") },
+                    ticks: { color: getCss("--muted"), maxRotation: 0, autoSkip: true, maxTicksLimit: 14 },
+                },
+                y: {
+                    min: -WEEKLY_LOSS_TARGET,
+                    max: ceiling,
+                    // Ticks show the real loss count; the zero line is the target.
+                    ticks: {
+                        color: getCss("--muted"),
+                        // Fixed step so a tick always lands on 0 — that's the
+                        // target line, and it's the one that gets emphasized.
+                        stepSize: 5,
+                        callback: (v) => v + WEEKLY_LOSS_TARGET,
+                    },
+                    grid: {
+                        color: (c) => (c.tick.value === 0 ? getCss("--muted") : getCss("--border")),
+                        lineWidth: (c) => (c.tick.value === 0 ? 2 : 1),
+                    },
+                    title: { display: true, text: "losses in week", color: getCss("--muted") },
+                },
+            },
+        },
+    });
+}
+
 // One row per (variant, time-class); shared by the loss counter and the streak grid.
 const GAME_TYPES = [
     { rules: "chess",    tc: "daily",  label: "Standard · Daily"  },
