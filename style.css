@@ -148,6 +148,128 @@ h1 {
 .delta.down { color: var(--loss); }
 .delta.flat { color: var(--muted); }
 
+.grind-section {
+    padding: 0.9rem 1.5rem 0;
+}
+
+.grind-card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 0.7rem 1.1rem 0.75rem;
+}
+
+.grind-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    font-size: 0.78rem;
+    color: var(--muted);
+    margin-bottom: 0.45rem;
+}
+
+.grind-title {
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-weight: 600;
+}
+
+.grind-hint { font-size: 0.75rem; }
+.grind-hint strong { color: var(--text); font-weight: 600; }
+
+.grind-total {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin-bottom: 0.7rem;
+}
+
+.grind-count {
+    font-size: 1.9rem;
+    font-weight: 600;
+    line-height: 1;
+    color: var(--loss);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.02em;
+}
+
+.grind-goal {
+    font-size: 0.95rem;
+    font-weight: 500;
+    color: var(--muted);
+    margin-left: 0.3rem;
+}
+
+.grind-bar {
+    flex: 1 1 180px;
+    height: 8px;
+    border-radius: 4px;
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    overflow: hidden;
+}
+
+.grind-fill {
+    height: 100%;
+    width: 0;
+    background: var(--loss);
+    border-radius: 4px;
+}
+
+.grind-pace {
+    font-size: 0.75rem;
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
+.grind-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+
+.grind-row {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+}
+
+.grind-label {
+    width: 128px;
+    flex-shrink: 0;
+    text-align: right;
+    font-size: 0.74rem;
+    color: var(--muted);
+}
+
+.grind-track {
+    flex: 1;
+    max-width: 460px;
+    height: 9px;
+    border-radius: 3px;
+    background: var(--panel-2);
+    overflow: hidden;
+}
+
+.grind-bar-mini {
+    height: 100%;
+    background: var(--loss);
+    opacity: 0.75;
+    border-radius: 3px;
+}
+
+.grind-num {
+    width: 2.4rem;
+    text-align: left;
+    font-size: 0.75rem;
+    font-variant-numeric: tabular-nums;
+    color: var(--text);
+}
+
 .strikeline-section {
     padding: 0.75rem 1.5rem 0;
 }
@@ -535,6 +657,8 @@ footer a:hover { color: var(--accent); }
 @media (max-width: 600px) {
     header, .summary, .grid, footer { padding-left: 1rem; padding-right: 1rem; }
     .chart-wrap { height: 260px; }
+    .grind-section { padding-left: 1rem; padding-right: 1rem; }
+    .grind-label { width: 96px; }
     .streak-section { padding-left: 1rem; padding-right: 1rem; }
     .streak-label { width: 100px; }
     .diverge-section { padding-left: 1rem; padding-right: 1rem; }

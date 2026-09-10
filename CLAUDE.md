@@ -64,6 +64,7 @@ Each bucket has `current`, `best`, `last_played`, and `source` (`"stats"` for th
 
 ## Dashboard sections
 
+0. **Losses banked** (very top) — progress toward `LOSS_GOAL` (500) total losses, on the theory that volume of losses drives improvement more than the occasional +10 Elo. Big total + progress bar + pace line (losses/week over the trailing `PACE_WINDOW_DAYS`, with a projected finish date), then one mini bar per game type, sorted descending and scaled to the largest type. **Ignores the variant toggle** (all variants stacked) and is rendered once at init. Bullet **is** included — a game count, not a rating.
 1. **Current ratings** (top, always full set) — variant × time-class cards. Source: `ratings.json`.
 2. **Variant-filtered summary** — total games, win/draw rate, white/black win rate.
 2a. **Strikeline (Games per day)** — minimal sparkline of daily game count. Variant-filtered but **does not** drop bullet (it's a count of activity, not a rating chart). Reference scale shown in the header (max / avg per active day / total) and the X-axis bounds at the bottom.
@@ -78,6 +79,9 @@ Each bucket has `current`, `best`, `last_played`, and `source` (`"stats"` for th
 ## Common edits
 
 - Add a new chart → register a `render*()` in `render()`, destroy with `destroyChart(key)` first, follow Chart.js patterns already used.
+- Change the loss goal → `LOSS_GOAL` in `dashboard.js` (the `/ 500` label in `index.html` is hardcoded — update both).
+- Change the loss-counter pace window → `PACE_WINDOW_DAYS` in `dashboard.js`.
+- Add / reorder game-type rows → `GAME_TYPES` in `dashboard.js` (shared by the loss counter, the streak grid, and the diverge rows).
 - Change rolling window for the weekly table → `for (let i = 11; i >= 0; i--)` in `renderWeekly`.
 - Change rolling window for the weekly boxplots → `BOXPLOT_WEEKS` constant in `dashboard.js`.
 - Change start-of-history filter → `START_DATE_MS` in `dashboard.js`.

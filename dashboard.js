@@ -49,6 +49,7 @@ async function init() {
     });
 
     setMeta();
+    renderLossCounter();
     renderCurrentRatings();
     renderDiverge();
     renderActivity("activityDailyChart", "activityDaily", "daily");
@@ -60,8 +61,76 @@ async function init() {
     render();
 }
 
+// "Losses banked" — progress toward LOSS_GOAL losses, the working theory being
+// that volume of losses (not the occasional +10 Elo) is what actually moves the
+// needle. Ignores the variant toggle (all variants stacked, like the diverge
+// rows) and is rendered once at init. Bullet counts: this is a game count, not
+// a rating, so it doesn't warp anything.
+const LOSS_GOAL = 500;
+const PACE_WINDOW_DAYS = 28;
+
+function renderLossCounter() {
+    const losses = allGames.filter(g => g.outcome === "loss");
+    const total = losses.length;
+    const pct = Math.min(100, total / LOSS_GOAL * 100);
+
+    document.getElementById("grind-losses").textContent = total.toLocaleString();
+    document.getElementById("grind-fill").style.width = `${pct}%`;
+    document.getElementById("grind-pace").textContent = paceText(losses, total);
+
+    const root = document.getElementById("grindGrid");
+    root.innerHTML = "";
+
+    const rows = GAME_TYPES
+        .map(r => ({ ...r, n: losses.filter(g => g.rules === r.rules && g.time_class === r.tc).length }))
+        .filter(r => r.n > 0)
+        .sort((a, b) => b.n - a.n);
+    const max = rows.length ? rows[0].n : 1;
+
+    for (const { label, n } of rows) {
+        const row = document.createElement("div");
+        row.className = "grind-row";
+        row.title = `${n} of ${total} losses (${(n / total * 100).toFixed(0)}%)`;
+
+        const lbl = document.createElement("span");
+        lbl.className = "grind-label";
+        lbl.textContent = label;
+
+        const track = document.createElement("div");
+        track.className = "grind-track";
+        const bar = document.createElement("div");
+        bar.className = "grind-bar-mini";
+        bar.style.width = `${n / max * 100}%`;
+        track.appendChild(bar);
+
+        const num = document.createElement("span");
+        num.className = "grind-num";
+        num.textContent = n;
+
+        row.append(lbl, track, num);
+        root.appendChild(row);
+    }
+}
+
+// Losses per week over the trailing window, plus a projected finish date.
+function paceText(losses, total) {
+    const remaining = LOSS_GOAL - total;
+    if (remaining <= 0) return `goal cleared — ${total - LOSS_GOAL} past 500`;
+
+    const cutoff = Date.now() - PACE_WINDOW_DAYS * 86400000;
+    const recent = losses.filter(g => g.end_time * 1000 >= cutoff).length;
+    if (recent === 0) return `${remaining} to go`;
+
+    const perWeek = recent / (PACE_WINDOW_DAYS / 7);
+    const eta = new Date(Date.now() + remaining / perWeek * 7 * 86400000);
+    const etaStr = eta.toLocaleDateString(undefined, { month: "short", year: "numeric" });
+    return `${remaining} to go · ${perWeek.toFixed(1)}/week → ${etaStr}`;
+}
+
+
 const STREAK_WINDOW = 30;
-const STREAK_ROWS = [
+// One row per (variant, time-class); shared by the loss counter and the streak grid.
+const GAME_TYPES = [
     { rules: "chess",    tc: "daily",  label: "Standard · Daily"  },
     { rules: "chess",    tc: "rapid",  label: "Standard · Rapid"  },
     { rules: "chess",    tc: "blitz",  label: "Standard · Blitz"  },
@@ -76,7 +145,7 @@ function renderStreak() {
     const root = document.getElementById("streakGrid");
     root.innerHTML = "";
 
-    for (const { rules, tc, label } of STREAK_ROWS) {
+    for (const { rules, tc, label } of GAME_TYPES) {
         const sub = allGames
             .filter(g => g.rules === rules && g.time_class === tc)
             .slice(-STREAK_WINDOW);
@@ -119,7 +188,7 @@ function renderStreak() {
 // and the weekly table) and is rendered once at init. Bullet stays in:
 // the Y axis is a game count, not a rating, so it doesn't warp anything —
 // same reasoning as the strikeline.
-const DIVERGE_ROWS = STREAK_ROWS;
+const DIVERGE_ROWS = GAME_TYPES;
 
 function dayKey(d) {
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
