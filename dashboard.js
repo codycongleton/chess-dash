@@ -51,6 +51,7 @@ async function init() {
     setMeta();
     renderLossCounter();
     renderLossTarget();
+    renderBeatenBy();
     renderCurrentRatings();
     renderDiverge();
     renderActivity("activityDailyChart", "activityDaily", "daily");
@@ -255,6 +256,127 @@ function renderLossTarget() {
                     },
                     grid: { color: getCss("--border") },
                     title: { display: true, text: "losses in week", color: getCss("--muted") },
+                },
+            },
+        },
+    });
+}
+
+// Average rating of the opponents who beat me, week over week. Rapid only —
+// rapid is Standard-only in this dataset, so there's no variant to separate —
+// and rendered once at init, like the rest of the loss-grind block. Shares
+// TARGET_WEEKS with the chart above it so the two X axes line up.
+const BEATEN_TIME_CLASS = "rapid";
+
+function renderBeatenBy() {
+    destroyChart("beaten");
+    const ctx = document.getElementById("beatenChart");
+
+    const losses = allGames.filter(g =>
+        g.outcome === "loss" &&
+        g.time_class === BEATEN_TIME_CLASS &&
+        typeof g.opp_rating === "number"
+    );
+
+    const thisMonday = startOfWeek(new Date());
+    const weeks = [];
+    for (let i = TARGET_WEEKS - 1; i >= 0; i--) {
+        const d = new Date(thisMonday);
+        d.setDate(d.getDate() - i * 7);
+        weeks.push(d);
+    }
+
+    const mean = (xs) => xs.reduce((a, b) => a + b, 0) / xs.length;
+
+    // null for a week with no rapid losses. The line deliberately breaks there
+    // (spanGaps stays off): with 12 of 26 weeks empty, bridging them would draw
+    // a confident trend across stretches where nothing was played.
+    const buckets = weeks.map(w => {
+        const end = w.getTime() + 7 * 86400000;
+        const sub = losses.filter(g => {
+            const t = g.end_time * 1000;
+            return t >= w.getTime() && t < end;
+        });
+        if (!sub.length) return null;
+        const opp = sub.map(g => g.opp_rating);
+        return {
+            n: sub.length,
+            opp: Math.round(mean(opp)),
+            mine: Math.round(mean(sub.map(g => g.my_rating))),
+            lo: Math.min(...opp),
+            hi: Math.max(...opp),
+        };
+    });
+
+    const allOpp = losses.map(g => g.opp_rating);
+    document.getElementById("beaten-n").textContent = losses.length;
+    document.getElementById("beaten-avg").textContent = allOpp.length ? Math.round(mean(allOpp)) : "—";
+    document.getElementById("beaten-mine").textContent = losses.length
+        ? Math.round(mean(losses.map(g => g.my_rating)))
+        : "—";
+
+    const lossColor = getCss("--loss");
+    const muted = getCss("--muted");
+
+    charts.beaten = new Chart(ctx, {
+        type: "line",
+        data: {
+            labels: weeks.map(d => d.toLocaleDateString(undefined, { month: "short", day: "numeric" })),
+            datasets: [
+                {
+                    label: "opponent",
+                    data: buckets.map(b => b && b.opp),
+                    borderColor: lossColor,
+                    backgroundColor: lossColor,
+                    borderWidth: 2,
+                    spanGaps: false,
+                    tension: 0.25,
+                    // Heavier dot = more losses behind that week's average.
+                    pointRadius: buckets.map(b => (b ? Math.min(3 + b.n, 8) : 0)),
+                    pointHoverRadius: buckets.map(b => (b ? Math.min(5 + b.n, 10) : 0)),
+                },
+                {
+                    label: "me",
+                    data: buckets.map(b => b && b.mine),
+                    borderColor: muted,
+                    backgroundColor: muted,
+                    borderWidth: 1.5,
+                    borderDash: [4, 4],
+                    spanGaps: false,
+                    tension: 0.25,
+                    pointRadius: 0,
+                    pointHoverRadius: 0,
+                },
+            ],
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: { mode: "index", intersect: false },
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    displayColors: false,
+                    callbacks: {
+                        label: (item) => {
+                            const b = buckets[item.dataIndex];
+                            if (!b) return "";
+                            if (item.datasetIndex === 1) return `my avg ${b.mine} · gap ${b.opp - b.mine > 0 ? "+" : ""}${b.opp - b.mine}`;
+                            const spread = b.lo === b.hi ? "" : ` · range ${b.lo}–${b.hi}`;
+                            return `beaten by ${b.opp} avg over ${b.n} loss${b.n === 1 ? "" : "es"}${spread}`;
+                        },
+                    },
+                },
+            },
+            scales: {
+                x: {
+                    grid: { display: false },
+                    ticks: { color: muted, maxRotation: 0, autoSkip: true, maxTicksLimit: 14 },
+                },
+                y: {
+                    grid: { color: getCss("--border") },
+                    ticks: { color: muted },
+                    title: { display: true, text: "rating", color: muted },
                 },
             },
         },

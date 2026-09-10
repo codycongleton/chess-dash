@@ -316,6 +316,52 @@ h1 {
     margin-top: 0.4rem;
 }
 
+.beaten-section {
+    padding: 0.75rem 1.5rem 0;
+}
+
+.beaten-card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 0.7rem 1.1rem 0.75rem;
+}
+
+.beaten-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    font-size: 0.78rem;
+    color: var(--muted);
+    margin-bottom: 0.45rem;
+}
+
+.beaten-title {
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-weight: 600;
+}
+
+.beaten-stats strong {
+    color: var(--text);
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    margin: 0 0.1rem;
+}
+
+.beaten-wrap {
+    position: relative;
+    height: 190px;
+}
+
+.beaten-hint {
+    font-size: 0.72rem;
+    color: var(--muted);
+    margin-top: 0.4rem;
+}
+
 .strikeline-section {
     padding: 0.75rem 1.5rem 0;
 }
@@ -705,6 +751,7 @@ footer a:hover { color: var(--accent); }
     .chart-wrap { height: 260px; }
     .grind-section { padding-left: 1rem; padding-right: 1rem; }
     .target-section { padding-left: 1rem; padding-right: 1rem; }
+    .beaten-section { padding-left: 1rem; padding-right: 1rem; }
     .grind-label { width: 96px; }
     .streak-section { padding-left: 1rem; padding-right: 1rem; }
     .streak-label { width: 100px; }

@@ -53,6 +53,24 @@
         </div>
     </section>
 
+    <section class="beaten-section">
+        <div class="beaten-card">
+            <div class="beaten-header">
+                <span class="beaten-title">Average rating I lost to</span>
+                <span class="beaten-stats">
+                    rapid · <strong id="beaten-n">—</strong> losses ·
+                    avg <strong id="beaten-avg">—</strong> ·
+                    vs my <strong id="beaten-mine">—</strong>
+                </span>
+            </div>
+            <div class="beaten-wrap"><canvas id="beatenChart"></canvas></div>
+            <div class="beaten-hint">
+                Weekly average of the opponents who beat me. Dashed = my own rating in those same games —
+                the gap is the real signal. Point size = losses that week; breaks = no rapid losses.
+            </div>
+        </div>
+    </section>
+
     <section class="ratings-block">
         <h2 class="section-title">Current ratings</h2>
         <div class="summary" id="ratings"></div>
