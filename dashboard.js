@@ -130,12 +130,31 @@ function paceText(losses, total) {
 
 
 const STREAK_WINDOW = 30;
+// The target line sits at raw y=0. It's stroked directly (on top of the bars)
+// rather than styled as a gridline, so it survives whatever ticks Chart.js
+// decides to generate for a given target.
+const targetLinePlugin = {
+    id: "targetLine",
+    afterDatasetsDraw(chart) {
+        const { ctx, chartArea, scales } = chart;
+        const y = scales.y.getPixelForValue(0);
+        ctx.save();
+        ctx.beginPath();
+        ctx.moveTo(chartArea.left, y);
+        ctx.lineTo(chartArea.right, y);
+        ctx.lineWidth = 2;
+        ctx.strokeStyle = getCss("--muted");
+        ctx.stroke();
+        ctx.restore();
+    },
+};
+
 // Weekly loss target — one bar per week, measured from the WEEKLY_LOSS_TARGET
 // line rather than from zero, so the X axis *is* the target and a bar's
 // direction reads as over / under at a glance. Any game type (all variants,
 // all time classes, bullet included) and rendered once at init: this tracks
 // the grind as a whole, so the variant toggle doesn't apply.
-const WEEKLY_LOSS_TARGET = 15;
+const WEEKLY_LOSS_TARGET = 7;
 const TARGET_WEEKS = 26;
 
 function renderLossTarget() {
@@ -164,6 +183,7 @@ function renderLossTarget() {
     const hits = done.filter(n => n >= WEEKLY_LOSS_TARGET).length;
     const avg = done.length ? done.reduce((a, b) => a + b, 0) / done.length : 0;
     const best = counts.length ? Math.max(...counts) : 0;
+    document.getElementById("target-goal").textContent = WEEKLY_LOSS_TARGET;
     document.getElementById("target-hits").textContent = `${hits} / ${done.length} wks`;
     document.getElementById("target-avg").textContent = avg.toFixed(1);
     document.getElementById("target-best").textContent = best;
@@ -184,6 +204,7 @@ function renderLossTarget() {
 
     charts.target = new Chart(ctx, {
         type: "bar",
+        plugins: [targetLinePlugin],
         data: {
             labels: weeks.map(d => d.toLocaleDateString(undefined, { month: "short", day: "numeric" })),
             datasets: [{
@@ -223,17 +244,16 @@ function renderLossTarget() {
                     min: -WEEKLY_LOSS_TARGET,
                     max: ceiling,
                     // Ticks show the real loss count; the zero line is the target.
+                    // Ticks step out from the target line, so one always lands
+                    // on it. Bounds are excluded: the floor label would sit
+                    // right on top of the first tick.
                     ticks: {
                         color: getCss("--muted"),
-                        // Fixed step so a tick always lands on 0 — that's the
-                        // target line, and it's the one that gets emphasized.
                         stepSize: 5,
+                        includeBounds: false,
                         callback: (v) => v + WEEKLY_LOSS_TARGET,
                     },
-                    grid: {
-                        color: (c) => (c.tick.value === 0 ? getCss("--muted") : getCss("--border")),
-                        lineWidth: (c) => (c.tick.value === 0 ? 2 : 1),
-                    },
+                    grid: { color: getCss("--border") },
                     title: { display: true, text: "losses in week", color: getCss("--muted") },
                 },
             },
