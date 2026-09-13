@@ -49,6 +49,7 @@ async function init() {
     });
 
     setMeta();
+    setLastUpdated();
     renderLossCounter();
     renderLossTarget();
     renderBeatenBy();
@@ -729,6 +730,17 @@ function setMeta() {
         parts.push(`refreshed ${fmt(ratingsData.fetched_at * 1000)}`);
     }
     document.getElementById("meta").textContent = parts.join(" · ");
+}
+
+// "last updated: YYYY-MM-DD HH:MM" in the header, local time, from ratings.json's fetched_at.
+function setLastUpdated() {
+    const el = document.getElementById("last-updated");
+    if (!ratingsData?.fetched_at) return;
+    const d = new Date(ratingsData.fetched_at * 1000);
+    const pad = (n) => String(n).padStart(2, "0");
+    el.textContent = `last updated: ${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ` +
+        `${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    el.hidden = false;
 }
 
 function render() {

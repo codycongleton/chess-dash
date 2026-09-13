@@ -67,6 +67,21 @@ h1 {
 
 .title a:hover { color: var(--accent); }
 
+.header-right {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+}
+
+.last-updated {
+    color: var(--muted);
+    font-size: 0.8rem;
+    font-variant-numeric: tabular-nums;
+}
+
+.last-updated[hidden] { display: none; }
+
 .variant-toggle {
     display: flex;
     background: var(--panel);

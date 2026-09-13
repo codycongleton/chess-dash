@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>chess-dash · kxrook</title>
-    <link rel="stylesheet" href="style.css?v=20260910">
+    <link rel="stylesheet" href="style.css?v=20260913">
 </head>
 <body>
     <header>
@@ -12,9 +12,12 @@
             <h1>chess-dash</h1>
             <a href="https://www.chess.com/member/kxrook" target="_blank" rel="noopener">kxrook ↗</a>
         </div>
-        <div class="variant-toggle" role="tablist" aria-label="Variant">
-            <button data-variant="chess" class="active" role="tab">Standard</button>
-            <button data-variant="chess960" role="tab">Chess960</button>
+        <div class="header-right">
+            <span class="last-updated" id="last-updated" hidden></span>
+            <div class="variant-toggle" role="tablist" aria-label="Variant">
+                <button data-variant="chess" class="active" role="tab">Standard</button>
+                <button data-variant="chess960" role="tab">Chess960</button>
+            </div>
         </div>
     </header>
 
@@ -189,6 +192,6 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.6/dist/chart.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@sgratzl/chartjs-chart-boxplot@4.4.4/build/index.umd.min.js"></script>
-    <script src="dashboard.js?v=20260910"></script>
+    <script src="dashboard.js?v=20260913"></script>
 </body>
 </html>
