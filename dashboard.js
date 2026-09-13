@@ -190,6 +190,9 @@ function renderLossTarget() {
     document.getElementById("target-avg").textContent = avg.toFixed(1);
     document.getElementById("target-best").textContent = best;
 
+    const todayIso = new Date().getDay() === 0 ? 7 : new Date().getDay(); // Mon=1..Sun=7
+    document.getElementById("target-days-left").textContent = 8 - todayIso;
+
     const winColor = getCss("--win");
     const shortColor = getCss("--draw");
     const colors = counts.map((n, i) => {
