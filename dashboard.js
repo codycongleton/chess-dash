@@ -56,6 +56,7 @@ async function init() {
     renderCurrentRatings();
     renderDiverge("day");
     renderDiverge("week");
+    renderDiverge("month");
     renderActivity("activityDailyChart", "activityDaily", "daily");
     renderActivity("activityRapidChart", "activityRapid", "rapid");
     renderStreak();
@@ -453,23 +454,31 @@ function dayKey(d) {
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
-// Same chart bucketed by day or by Mon-start week. `id` prefixes the DOM ids
-// (divergeGrid / diverge-start / diverge-end, weeklyDivergeGrid / …) and the
+// Same chart bucketed by day, Mon-start week, or calendar month. `id` prefixes the DOM ids
+// (divergeGrid / diverge-start / diverge-end, weeklyDivergeGrid / …, monthlyDivergeGrid / …) and the
 // chart keys.
 const DIVERGE_PERIODS = {
     day: {
         id: "diverge",
         start: (d) => { const o = new Date(d); o.setHours(0, 0, 0, 0); return o; },
-        stepDays: 1,
+        step: (d) => d.setDate(d.getDate() + 1),
         maxBarThickness: 6,
         title: (d) => d.toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" }),
     },
     week: {
         id: "weeklyDiverge",
         start: startOfWeek,
-        stepDays: 7,
+        step: (d) => d.setDate(d.getDate() + 7),
         maxBarThickness: 18,
         title: (d) => `Week of ${d.toLocaleDateString(undefined, { month: "short", day: "numeric" })}`,
+    },
+    month: {
+        id: "monthlyDiverge",
+        start: (d) => new Date(d.getFullYear(), d.getMonth(), 1),
+        step: (d) => d.setMonth(d.getMonth() + 1),
+        maxBarThickness: 48,
+        title: (d) => d.toLocaleDateString(undefined, { month: "long", year: "numeric" }),
+        axis: (d) => d.toLocaleDateString(undefined, { month: "short", year: "numeric" }),
     },
 };
 
@@ -492,9 +501,11 @@ function renderDiverge(period = "day") {
     const today = P.start(new Date());
 
     const days = [];
-    for (const cur = new Date(earliest); cur <= today; cur.setDate(cur.getDate() + P.stepDays)) {
+    for (const cur = new Date(earliest); cur <= today; P.step(cur)) {
         days.push(new Date(cur));
     }
+    const bucketEnds = days.map(d => P.step(new Date(d)));
+    const domainEnd = bucketEnds[bucketEnds.length - 1];
 
     // Tally per (row, day) first so the Y scale can be shared across rows.
     const rows = [];
@@ -513,9 +524,11 @@ function renderDiverge(period = "day") {
         }
 
         const wins = [], losses = [], draws = [];
-        for (const d of days) {
+        for (const [i, d] of days.entries()) {
             const b = tally.get(dayKey(d)) || { win: 0, loss: 0, draw: 0 };
-            const x = d.getTime();
+            // Centre each bar in its bucket so the first and last aren't
+            // half-clipped by the axis bounds (very visible on monthly bars).
+            const x = (d.getTime() + bucketEnds[i]) / 2;
             wins.push({ x, y: b.win });
             losses.push({ x, y: -b.loss });
             draws.push(b.draw);
@@ -532,7 +545,7 @@ function renderDiverge(period = "day") {
         });
     }
 
-    const fmtShort = (d) => d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+    const fmtShort = P.axis ?? ((d) => d.toLocaleDateString(undefined, { month: "short", day: "numeric" }));
     document.getElementById(`${P.id}-start`).textContent = fmtShort(earliest);
     document.getElementById(`${P.id}-end`).textContent = fmtShort(today);
 
@@ -570,7 +583,7 @@ function renderDiverge(period = "day") {
                     tooltip: {
                         displayColors: false,
                         callbacks: {
-                            title: (items) => P.title(new Date(items[0].parsed.x)),
+                            title: (items) => P.title(row.days[items[0].dataIndex]),
                             label: () => "",
                             afterBody: (items) => {
                                 const i = items[0].dataIndex;
@@ -589,7 +602,7 @@ function renderDiverge(period = "day") {
                         type: "time",
                         display: false,
                         min: earliest.getTime(),
-                        max: today.getTime(),
+                        max: domainEnd,
                         offset: false,
                         stacked: true,
                     },
