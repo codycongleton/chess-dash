@@ -190,16 +190,8 @@ function renderLossTarget() {
     document.getElementById("target-avg").textContent = avg.toFixed(1);
     document.getElementById("target-best").textContent = best;
 
-    // Count down to next Monday 00:00 — days while there's more than one left,
-    // hours on the final day. Rounded up, so "1 day" never means "a few minutes".
-    const weekEnd = startOfWeek(new Date());
-    weekEnd.setDate(weekEnd.getDate() + 7);
-    const hoursLeft = (weekEnd - Date.now()) / 3_600_000;
-    const underADay = hoursLeft <= 24;
-    const left = Math.ceil(underADay ? hoursLeft : hoursLeft / 24);
-    document.getElementById("target-left-unit").textContent =
-        (underADay ? "hour" : "day") + (left === 1 ? "" : "s");
-    document.getElementById("target-days-left").textContent = left;
+    updateWeekCountdown();
+    setInterval(updateWeekCountdown, 1000);
 
     const winColor = getCss("--win");
     const shortColor = getCss("--draw");
@@ -1064,6 +1056,27 @@ function renderBoxplot() {
             },
         });
         }
+    }
+}
+
+// Live countdown to next Monday 00:00 for the weekly loss target header — whole
+// days (rounded up) while more than one is left, then a ticking h:mm:ss clock.
+function updateWeekCountdown() {
+    const weekEnd = startOfWeek(new Date());
+    weekEnd.setDate(weekEnd.getDate() + 7);
+    const secsLeft = Math.max(0, Math.ceil((weekEnd - Date.now()) / 1000));
+    const unit = document.getElementById("target-left-unit");
+    const value = document.getElementById("target-days-left");
+    if (secsLeft > 86_400) {
+        const days = Math.ceil(secsLeft / 86_400);
+        unit.textContent = "days";
+        value.textContent = days;
+    } else {
+        const h = Math.floor(secsLeft / 3600);
+        const m = String(Math.floor(secsLeft / 60) % 60).padStart(2, "0");
+        const s = String(secsLeft % 60).padStart(2, "0");
+        unit.textContent = "time";
+        value.textContent = `${h}:${m}:${s}`;
     }
 }
 
