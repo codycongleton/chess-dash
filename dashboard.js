@@ -190,8 +190,16 @@ function renderLossTarget() {
     document.getElementById("target-avg").textContent = avg.toFixed(1);
     document.getElementById("target-best").textContent = best;
 
-    const todayIso = new Date().getDay() === 0 ? 7 : new Date().getDay(); // Mon=1..Sun=7
-    document.getElementById("target-days-left").textContent = 8 - todayIso;
+    // Count down to next Monday 00:00 — days while there's more than one left,
+    // hours on the final day. Rounded up, so "1 day" never means "a few minutes".
+    const weekEnd = startOfWeek(new Date());
+    weekEnd.setDate(weekEnd.getDate() + 7);
+    const hoursLeft = (weekEnd - Date.now()) / 3_600_000;
+    const underADay = hoursLeft <= 24;
+    const left = Math.ceil(underADay ? hoursLeft : hoursLeft / 24);
+    document.getElementById("target-left-unit").textContent =
+        (underADay ? "hour" : "day") + (left === 1 ? "" : "s");
+    document.getElementById("target-days-left").textContent = left;
 
     const winColor = getCss("--win");
     const shortColor = getCss("--draw");
