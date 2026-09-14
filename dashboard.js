@@ -1059,25 +1059,18 @@ function renderBoxplot() {
     }
 }
 
-// Live countdown to next Monday 00:00 for the weekly loss target header — whole
-// days (rounded up) while more than one is left, then a ticking h:mm:ss clock.
+// Live countdown to next Monday 00:00 for the weekly loss target header —
+// "1d 9h" while a day or more is left, then a ticking h:mm:ss clock.
 function updateWeekCountdown() {
     const weekEnd = startOfWeek(new Date());
     weekEnd.setDate(weekEnd.getDate() + 7);
     const secsLeft = Math.max(0, Math.ceil((weekEnd - Date.now()) / 1000));
-    const unit = document.getElementById("target-left-unit");
-    const value = document.getElementById("target-days-left");
-    if (secsLeft > 86_400) {
-        const days = Math.ceil(secsLeft / 86_400);
-        unit.textContent = "days";
-        value.textContent = days;
-    } else {
-        const h = Math.floor(secsLeft / 3600);
-        const m = String(Math.floor(secsLeft / 60) % 60).padStart(2, "0");
-        const s = String(secsLeft % 60).padStart(2, "0");
-        unit.textContent = "time";
-        value.textContent = `${h}:${m}:${s}`;
-    }
+    const d = Math.floor(secsLeft / 86_400);
+    const h = Math.floor(secsLeft / 3600) % 24;
+    const m = String(Math.floor(secsLeft / 60) % 60).padStart(2, "0");
+    const s = String(secsLeft % 60).padStart(2, "0");
+    document.getElementById("target-time-left").textContent =
+        d > 0 ? `${d}d ${h}h` : `${h}:${m}:${s}`;
 }
 
 function startOfWeek(d) {
