@@ -54,7 +54,8 @@ async function init() {
     renderLossTarget();
     renderBeatenBy();
     renderCurrentRatings();
-    renderDiverge();
+    renderDiverge("day");
+    renderDiverge("week");
     renderActivity("activityDailyChart", "activityDaily", "daily");
     renderActivity("activityRapidChart", "activityRapid", "rapid");
     renderStreak();
@@ -452,27 +453,46 @@ function dayKey(d) {
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
-function renderDiverge() {
-    for (const { rules, tc } of DIVERGE_ROWS) destroyChart(`diverge-${rules}-${tc}`);
+// Same chart bucketed by day or by Mon-start week. `id` prefixes the DOM ids
+// (divergeGrid / diverge-start / diverge-end, weeklyDivergeGrid / …) and the
+// chart keys.
+const DIVERGE_PERIODS = {
+    day: {
+        id: "diverge",
+        start: (d) => { const o = new Date(d); o.setHours(0, 0, 0, 0); return o; },
+        stepDays: 1,
+        maxBarThickness: 6,
+        title: (d) => d.toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" }),
+    },
+    week: {
+        id: "weeklyDiverge",
+        start: startOfWeek,
+        stepDays: 7,
+        maxBarThickness: 18,
+        title: (d) => `Week of ${d.toLocaleDateString(undefined, { month: "short", day: "numeric" })}`,
+    },
+};
 
-    const root = document.getElementById("divergeGrid");
+function renderDiverge(period = "day") {
+    const P = DIVERGE_PERIODS[period];
+    for (const { rules, tc } of DIVERGE_ROWS) destroyChart(`${P.id}-${rules}-${tc}`);
+
+    const root = document.getElementById(`${P.id}Grid`);
     root.innerHTML = "";
 
     if (!allGames.length) {
         root.innerHTML = `<p class="hint">No games yet.</p>`;
-        document.getElementById("diverge-start").textContent = "—";
-        document.getElementById("diverge-end").textContent = "—";
+        document.getElementById(`${P.id}-start`).textContent = "—";
+        document.getElementById(`${P.id}-end`).textContent = "—";
         return;
     }
 
-    // One shared day domain so every row lines up vertically.
-    const earliest = new Date(allGames[0].end_time * 1000);
-    earliest.setHours(0, 0, 0, 0);
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    // One shared bucket domain so every row lines up vertically.
+    const earliest = P.start(new Date(allGames[0].end_time * 1000));
+    const today = P.start(new Date());
 
     const days = [];
-    for (const cur = new Date(earliest); cur <= today; cur.setDate(cur.getDate() + 1)) {
+    for (const cur = new Date(earliest); cur <= today; cur.setDate(cur.getDate() + P.stepDays)) {
         days.push(new Date(cur));
     }
 
@@ -486,7 +506,7 @@ function renderDiverge() {
 
         const tally = new Map(); // day key -> { win, loss, draw }
         for (const g of sub) {
-            const key = dayKey(new Date(g.end_time * 1000));
+            const key = dayKey(P.start(new Date(g.end_time * 1000)));
             const bucket = tally.get(key) || { win: 0, loss: 0, draw: 0 };
             bucket[g.outcome] += 1;
             tally.set(key, bucket);
@@ -513,8 +533,8 @@ function renderDiverge() {
     }
 
     const fmtShort = (d) => d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
-    document.getElementById("diverge-start").textContent = fmtShort(earliest);
-    document.getElementById("diverge-end").textContent = fmtShort(today);
+    document.getElementById(`${P.id}-start`).textContent = fmtShort(earliest);
+    document.getElementById(`${P.id}-end`).textContent = fmtShort(today);
 
     const winColor = getCss("--win");
     const lossColor = getCss("--loss");
@@ -532,13 +552,13 @@ function renderDiverge() {
         `;
         root.appendChild(cell);
 
-        charts[`diverge-${row.rules}-${row.tc}`] = new Chart(cell.querySelector("canvas"), {
+        charts[`${P.id}-${row.rules}-${row.tc}`] = new Chart(cell.querySelector("canvas"), {
             type: "bar",
             data: {
                 datasets: [
                     { label: "wins",   data: row.wins,   backgroundColor: winColor },
                     { label: "losses", data: row.losses, backgroundColor: lossColor },
-                ].map(ds => ({ ...ds, barPercentage: 1, categoryPercentage: 1, maxBarThickness: 6 })),
+                ].map(ds => ({ ...ds, barPercentage: 1, categoryPercentage: 1, maxBarThickness: P.maxBarThickness })),
             },
             options: {
                 responsive: true,
@@ -550,10 +570,7 @@ function renderDiverge() {
                     tooltip: {
                         displayColors: false,
                         callbacks: {
-                            title: (items) =>
-                                new Date(items[0].parsed.x).toLocaleDateString(undefined, {
-                                    weekday: "short", month: "short", day: "numeric",
-                                }),
+                            title: (items) => P.title(new Date(items[0].parsed.x)),
                             label: () => "",
                             afterBody: (items) => {
                                 const i = items[0].dataIndex;

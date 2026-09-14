@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>chess-dash · kxrook</title>
-    <link rel="stylesheet" href="style.css?v=20260913d">
+    <link rel="stylesheet" href="style.css?v=20260913e">
 </head>
 <body>
     <header>
@@ -118,6 +118,24 @@
         </div>
     </section>
 
+    <section class="diverge-section">
+        <div class="diverge-card">
+            <div class="diverge-header">
+                <span class="diverge-title">Weekly wins vs losses</span>
+                <span class="diverge-hint">
+                    Both variants · one row per game type · Mon-start weeks ·
+                    <span class="legend-win">■</span> wins above the line,
+                    <span class="legend-loss">■</span> losses below
+                </span>
+            </div>
+            <div id="weeklyDivergeGrid" class="diverge-grid"></div>
+            <div class="diverge-axis">
+                <span id="weeklyDiverge-start">—</span>
+                <span id="weeklyDiverge-end">—</span>
+            </div>
+        </div>
+    </section>
+
     <section class="activity-row">
         <div class="card">
             <h2>Daily · Standard — last 14 days</h2>
@@ -193,6 +211,6 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.6/dist/chart.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@sgratzl/chartjs-chart-boxplot@4.4.4/build/index.umd.min.js"></script>
-    <script src="dashboard.js?v=20260913d"></script>
+    <script src="dashboard.js?v=20260913e"></script>
 </body>
 </html>
