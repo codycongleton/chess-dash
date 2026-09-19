@@ -756,6 +756,13 @@ footer a:hover { color: var(--accent); }
     flex-shrink: 0;
 }
 
+.streak-last {
+    font-size: 0.72rem;
+    color: var(--muted);
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+}
+
 .streak-cell.win   { background: var(--win); }
 .streak-cell.loss  { background: var(--loss); }
 .streak-cell.draw  { background: var(--draw); }

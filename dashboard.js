@@ -439,6 +439,15 @@ function renderStreak() {
         }
 
         row.appendChild(cells);
+
+        const last = sub[sub.length - 1];
+        const lastDate = document.createElement("span");
+        lastDate.className = "streak-last";
+        lastDate.textContent = new Date(last.end_time * 1000)
+            .toLocaleDateString(undefined, { month: "numeric", day: "numeric", year: "2-digit" });
+        lastDate.title = "Last game played";
+        row.appendChild(lastDate);
+
         root.appendChild(row);
     }
 }
