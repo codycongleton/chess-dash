@@ -57,8 +57,13 @@ async function init() {
     renderDiverge("day");
     renderDiverge("week");
     renderDiverge("month");
-    renderActivity("activityDailyChart", "activityDaily", "daily");
-    renderActivity("activityRapidChart", "activityRapid", "rapid");
+    renderActivity("activityDailyChart", "activityDaily", [
+        { label: "Standard", rules: "chess", timeClasses: ["daily"] },
+        { label: "Chess960", rules: "chess960", timeClasses: ["daily"] },
+    ]);
+    renderActivity("activityLiveChart", "activityLive", [
+        { label: "960 Live", rules: "chess960", timeClasses: ["rapid", "blitz"] },
+    ]);
     renderStreak();
     renderGameCountRating();
     renderBoxplot();
@@ -639,7 +644,7 @@ function renderDiverge(period = "day") {
     }
 }
 
-function renderActivity(canvasId, key, timeClass) {
+function renderActivity(canvasId, key, groups) {
     destroyChart(key);
     const ctx = document.getElementById(canvasId);
 
@@ -652,19 +657,23 @@ function renderActivity(canvasId, key, timeClass) {
         days.push(d);
     }
 
-    const sub = allGames.filter(g => g.rules === "chess" && g.time_class === timeClass);
-
-    const perDay = days.map(d => {
-        const start = d.getTime();
-        const end = start + 24 * 60 * 60 * 1000;
-        const inDay = sub.filter(g => {
-            const t = g.end_time * 1000;
-            return t >= start && t < end;
+    const series = groups.map(group => {
+        const sub = allGames.filter(g =>
+            g.rules === group.rules && group.timeClasses.includes(g.time_class)
+        );
+        const perDay = days.map(d => {
+            const start = d.getTime();
+            const end = start + 24 * 60 * 60 * 1000;
+            const inDay = sub.filter(g => {
+                const t = g.end_time * 1000;
+                return t >= start && t < end;
+            });
+            const win  = inDay.filter(g => g.outcome === "win").length;
+            const loss = inDay.filter(g => g.outcome === "loss").length;
+            const draw = inDay.filter(g => g.outcome === "draw").length;
+            return { played: inDay.length, win, loss, draw };
         });
-        const win  = inDay.filter(g => g.outcome === "win").length;
-        const loss = inDay.filter(g => g.outcome === "loss").length;
-        const draw = inDay.filter(g => g.outcome === "draw").length;
-        return { played: inDay.length, win, loss, draw };
+        return { ...group, perDay };
     });
 
     const labels = days.map(d =>
@@ -675,26 +684,18 @@ function renderActivity(canvasId, key, timeClass) {
         type: "bar",
         data: {
             labels,
-            datasets: [
-                {
-                    label: "Win",
-                    data: perDay.map(d => d.win),
-                    backgroundColor: getCss("--win"),
-                    borderWidth: 0,
-                },
-                {
-                    label: "Loss",
-                    data: perDay.map(d => d.loss),
-                    backgroundColor: getCss("--loss"),
-                    borderWidth: 0,
-                },
-                {
-                    label: "Draw",
-                    data: perDay.map(d => d.draw),
-                    backgroundColor: getCss("--draw"),
-                    borderWidth: 0,
-                },
-            ],
+            datasets: series.flatMap((group, groupIndex) => [
+                ["Win", "win", "--win"],
+                ["Loss", "loss", "--loss"],
+                ["Draw", "draw", "--draw"],
+            ].map(([outcomeLabel, outcome, color]) => ({
+                label: `${group.label} · ${outcomeLabel}`,
+                data: group.perDay.map(d => d[outcome]),
+                backgroundColor: groupIndex === 0 ? getCss(color) : `${getCss(color)}99`,
+                borderColor: getCss(color),
+                borderWidth: groupIndex === 0 ? 0 : 1,
+                stack: group.label,
+            }))),
         },
         options: {
             responsive: true,
@@ -705,7 +706,10 @@ function renderActivity(canvasId, key, timeClass) {
                     mode: "index",
                     intersect: false,
                     callbacks: {
-                        afterTitle: (items) => `played: ${perDay[items[0].dataIndex].played}`,
+                        afterTitle: (items) => {
+                            const i = items[0].dataIndex;
+                            return series.map(group => `${group.label}: ${group.perDay[i].played} played`);
+                        },
                     },
                 },
             },
