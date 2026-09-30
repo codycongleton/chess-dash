@@ -62,6 +62,7 @@ async function init() {
         { label: "Chess960", rules: "chess960", timeClasses: ["daily"] },
     ]);
     renderActivity("activityLiveChart", "activityLive", [
+        { label: "Standard Live", rules: "chess", timeClasses: ["rapid", "blitz"] },
         { label: "960 Live", rules: "chess960", timeClasses: ["rapid", "blitz"] },
     ]);
     renderStreak();
